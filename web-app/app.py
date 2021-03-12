@@ -4,6 +4,7 @@ from flask import render_template, request, jsonify
 from flask_sqlalchemy import SQLAlchemy
 from datetime import datetime
 from flask_restful import Api, Resource
+from flask_mqtt import Mqtt
 
 
 appname = "iot-clean-air"
@@ -11,6 +12,7 @@ app = Flask(appname)
 api = Api(app)
 base_url = "/api/v1"
 host_path = "http://151.81.17.207:5000"
+mqtt = Mqtt(app)
 
 myconfig = Config
 app.config.from_object(myconfig)
@@ -37,7 +39,6 @@ class Sensorfeed(db.Model):
 
 
 class SensorStatus(Resource):
-    # controlli su input
     def get(self):
         id = request.get_json()['id']
 
@@ -50,7 +51,7 @@ class SensorStatus(Resource):
         status = sensor.status
         return f'Window Status: {status}', 200
 
-    def post(self):
+    def post(self): # post from arduino when changed window status
 
         id = request.get_json()['id']
         status = request.get_json()['status']
@@ -68,8 +69,10 @@ class SensorStatus(Resource):
             db.session.add(sf)
             db.session.commit()
         else:
-            sensor.status = status
-            db.session.commit()
+            if sensor.status != status:
+                sensor.status = status
+                db.session.commit()
+                mqtt.publish(f'{id}/window', payload=f'{status}')
 
         return "OK", 200
 
@@ -107,6 +110,31 @@ class SensorPollution(Resource):
 
 
 api.add_resource(SensorPollution, f'{base_url}/sensor/pollution')
+
+
+class Client(Resource):
+    def post(self): #post from client
+        id = request.get_json()['id']
+        status = request.get_json()['status']
+
+        if id is None:
+            return "id field is not valid", 400
+
+        if status is None or status not in [0, 1]:
+            return "status field is not valid", 400
+
+        sensor = Sensorfeed.query.filter_by(id=id).first()
+
+        if sensor is None:
+            return "No sensors found", 400
+        else:
+            if sensor.status != status:
+                mqtt.publish(f'{id}/command', payload=f'{status}')
+
+        return None, 200
+
+
+api.add_resource(Client, f'{base_url}/sensor/command')
 
 
 @app.errorhandler(404)
