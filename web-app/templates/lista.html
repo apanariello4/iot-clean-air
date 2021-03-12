@@ -1,9 +1,8 @@
 {% extends 'main.html' %}
 
 {% block content %}
-
 {% for el in lista %}
-<li>T: , Value: {{el.value}}</li> <BR>
+<li>ID: {{el.id}}, Status: {{el.status}}, Pollution: {{el.pollution}}</li> <BR>
 {% endfor %}
 
 {% endblock %}

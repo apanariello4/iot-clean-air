@@ -3,9 +3,15 @@ from config import Config
 from flask import render_template, request, jsonify
 from flask_sqlalchemy import SQLAlchemy
 from datetime import datetime
+from flask_restful import Api, Resource
+
 
 appname = "iot-clean-air"
 app = Flask(appname)
+api = Api(app)
+base_url = "/api/v1"
+host_path = "http://151.81.17.207:5000"
+
 myconfig = Config
 app.config.from_object(myconfig)
 
@@ -17,12 +23,90 @@ class Sensorfeed(db.Model):
     # id arduino | stato finestra | timestamp
 
     id = db.Column('id', db.Integer, primary_key=True)
-    value = db.Column(db.String(100))
+    status = db.Column('status', db.Boolean)
+    pollution = db.Column('pollution', db.Integer)
     timestamp = db.Column(db.DateTime(timezone=True),
                           nullable=False,  default=datetime.utcnow)
 
-    def __init__(self, value):
-        self.value = value
+    def __init__(self, id, pollution=None, status=None):
+        self.id = id
+        self.status = status
+        self.pollution = pollution
+
+    # aggiungi update
+
+
+class SensorStatus(Resource):
+    # controlli su input
+    def get(self):
+        id = request.get_json()['id']
+
+        if id is None:
+            return "id field is not valid", 400
+
+        sensor = Sensorfeed.query.filter_by(id=id).first()
+        if sensor is None:
+            return f"No sensor with this id: {id} in db", 400
+        status = sensor.status
+        return f'Window Status: {status}', 200
+
+    def post(self):
+
+        id = request.get_json()['id']
+        status = request.get_json()['status']
+
+        if id is None:
+            return "id field is not valid", 400
+
+        if status is None or status not in [0, 1]:
+            return "status field is not valid", 400
+
+        sensor = Sensorfeed.query.filter_by(id=id).first()
+
+        if sensor is None:
+            sf = Sensorfeed(id, status=status)
+            db.session.add(sf)
+            db.session.commit()
+        else:
+            sensor.status = status
+            db.session.commit()
+
+        return "OK", 200
+
+
+api.add_resource(SensorStatus, f'{base_url}/sensor/status')
+
+
+class SensorPollution(Resource):
+    # controlli su input
+    def get(self):
+        id = request.get_json()['id']
+
+        if id is None:
+            return "id field is not valid", 400
+
+        sensor = Sensorfeed.query.filter_by(id=id).first()
+
+        if sensor is None:
+            return f"No sensor with this id: {id} in db", 400
+
+        pol = sensor.pollution
+        return f'Pollution: {pol}', 200
+
+    def post(self):
+        print(request.get_json())
+        id = request.get_json()['id']
+        pol = request.get_json()['pollution']
+
+        sf = Sensorfeed(id, pollution=pol)
+
+        db.session.add(sf)
+        db.session.commit()
+
+        return None, 200
+
+
+api.add_resource(SensorPollution, f'{base_url}/sensor/pollution')
 
 
 @app.errorhandler(404)
@@ -40,7 +124,7 @@ def testoHTML():
 
 @app.route('/lista', methods=['GET'])
 def stampalsita():
-    elenco = Sensorfeed.query.order_by(Sensorfeed.id.desc()).limit(2).all()
+    elenco = Sensorfeed.query.order_by(Sensorfeed.id.desc()).limit(10).all()
     #elenco = db.q
 
     return render_template('lista.html', lista=elenco)
@@ -57,8 +141,7 @@ def addinlista(val):
 
 if __name__ == '__main__':
 
-    if True:  # first time (?)
-        db.create_all()
+    db.create_all()
 
     port = 5000
     interface = '0.0.0.0'
