@@ -39,8 +39,8 @@ class Config:
 
     # MQTT
 
-    'MQTT_BROKER_URL' = '151.81.17.207'
-    'MQTT_BROKER_PORT' = 1883
-    'MQTT_USERNAME' = 'user'
-    'MQTT_PASSWORD' = 'secret'
-    'MQTT_REFRESH_TIME' = 1.0  # refresh time in seconds
+    MQTT_BROKER_URL = '151.81.17.207'
+    MQTT_BROKER_PORT = 1883
+    MQTT_USERNAME = 'user'
+    MQTT_PASSWORD = 'secret'
+    MQTT_REFRESH_TIME = 1.0  # refresh time in seconds
