@@ -1,6 +1,5 @@
-from flask import Flask
+from flask import Flask, render_template, request, jsonify
 from config import Config
-from flask import render_template, request, jsonify
 from flask_sqlalchemy import SQLAlchemy
 from datetime import datetime
 from flask_restful import Api, Resource
@@ -12,7 +11,7 @@ app = Flask(appname)
 api = Api(app)
 base_url = "/api/v1"
 host_path = "http://151.81.17.207:5000"
-mqtt = Mqtt(app)
+mqtt = Mqtt(app)  # Need broker or exception thrown
 
 myconfig = Config
 app.config.from_object(myconfig)
@@ -22,7 +21,7 @@ db = SQLAlchemy(app)
 
 
 class Sensorfeed(db.Model):
-    # id arduino | stato finestra | timestamp
+    # id arduino | window status | pollution value | timestamp
 
     id = db.Column('id', db.Integer, primary_key=True)
     status = db.Column('status', db.Boolean)
@@ -49,9 +48,14 @@ class SensorStatus(Resource):
         if sensor is None:
             return f"No sensor with this id: {id} in db", 400
         status = sensor.status
-        return f'Window Status: {status}', 200
 
-    def post(self): # post from arduino when changed window status
+        r = {
+            'id': id,
+            'status': status
+        }
+        return r, 200
+
+    def post(self):  # post from arduino when changed window status
 
         id = request.get_json()['id']
         status = request.get_json()['status']
@@ -72,7 +76,7 @@ class SensorStatus(Resource):
             if sensor.status != status:
                 sensor.status = status
                 db.session.commit()
-                mqtt.publish(f'{id}/window', payload=f'{status}')
+                mqtt.publish(f'{id}/window', payload=status)
 
         return "OK", 200
 
@@ -93,8 +97,12 @@ class SensorPollution(Resource):
         if sensor is None:
             return f"No sensor with this id: {id} in db", 400
 
-        pol = sensor.pollution
-        return f'Pollution: {pol}', 200
+        r = {
+            'id': id,
+            'pollution': sensor.pollution
+        }
+
+        return r, 200
 
     def post(self):
         print(request.get_json())
@@ -113,7 +121,7 @@ api.add_resource(SensorPollution, f'{base_url}/sensor/pollution')
 
 
 class Client(Resource):
-    def post(self): #post from client
+    def post(self):  # post from client
         id = request.get_json()['id']
         status = request.get_json()['status']
 
