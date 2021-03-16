@@ -10,6 +10,11 @@ int state_one = 0;
 int iFutureState;
 int iReceived;
 int iState;
+int changed = 0;
+int changed_0 = 0;
+int changed_2 = 0; 
+int changed_1 = 0;
+
 unsigned long lasttime,lasttime_servo;
 
 
@@ -38,7 +43,7 @@ void loop() {
 
  
   // ogni n secondi calcolo il valore di CO2
-  if (millis() - lasttime > 12000){
+  if (millis() - lasttime > 4000){
     lasttime = millis();
     
     //se posso vado a calcolare i valori di CO2 interna
@@ -55,6 +60,7 @@ void loop() {
           if(state_zero!=1 && state_one!=1){
               state_zero=0; 
               state_one=1;
+              changed=0; // ho finito di cambiare lo stato e lo comunico al Bridge
            }
         }
         else{
@@ -62,6 +68,7 @@ void loop() {
           if(state_zero!=0 && state_one!=0){
              state_zero=1; 
              state_one=0;
+             changed=0; // ho finito di cambiare lo stato e lo comunico al Bridge
           }
         }   
       }
@@ -85,10 +92,12 @@ void loop() {
     if(pos==270){
       state_zero=1; 
       state_one=1;
+      changed=0; // ho finito di cambiare lo stato e lo comunico al Bridge
     }
   }
   
-  //se mi trovo in questo stato => chiudo finestra
+  //se mi trovo in questo stato => chiudo finestra (entro nell'if fino alla fine della transizione
+  // così facendo non blocco la ricezione Arduino-Bridge come se fossi in un ciclo for/while)
   if(state_zero==1 && state_one==0){
     // goes from 180 degrees to 0 degrees
     if (millis() - lasttime_servo > 15) {
@@ -101,27 +110,48 @@ void loop() {
     if(pos==90){
       state_zero=0; 
       state_one=0;
+      changed=0; // ho finito di cambiare lo stato e lo comunico al Bridge
     }
   }
-  
-  
-  // mando lo stato della finestra al Bridge
-  Serial.write(0xff);
-  Serial.write(0x01);
-  
-  if(state_zero == 0 && state_one == 0){
-    Serial.write(0x00);
-  }
-  if(state_zero == 1 && state_one == 1){
-    Serial.write(0x01);
-  }
-  //stato di transizione
-  else{ 
-    Serial.write(0x02);
-  }
-  Serial.write(0xfe); //fine del file
 
-//se ho un dato disponibile sulla seriale lo uso, altrimenti faccio altro(in questo caso niente)
+  // Scrittura del dato sul Bridge, se lo stato del Bridge non era aggiornato
+  //if(changed == 0){
+  if(changed==0){  
+    // mando lo stato della finestra al Bridge se è stato aggiornato
+    Serial.write(0xff);
+    Serial.write(0x01);
+
+    if(state_zero == 0 && state_one == 0){
+      Serial.write(0x00);
+      // incremento uno e azzero gli altri per considerare un invio consecutivo dello stesso valore e non un invio alternato di valori
+      // voglio che al Bridge arrivi 0,0,0 per essere sicuro che l'abbia letto e non 0,1,1,0,2,2,0 (tre 0 non consecutivi)
+      changed_0++;
+      changed_1 = 0;
+      changed_2 = 0;
+    }
+    if(state_zero == 1 && state_one == 1){
+      Serial.write(0x01);
+       changed_1++;
+      changed_0 = 0;
+      changed_2 = 0;
+    }
+    //stato di transizione
+    if ((state_zero == 1 && state_one == 0)||(state_zero == 0 && state_one == 1)){ 
+      Serial.write(0x02);
+      changed_2++;
+      changed_0 = 0;
+      changed_1 = 0;
+    }
+    Serial.write(0xfe); //fine del file
+    
+    // se ho mandato per tre volte consecutive lo stesso valore allora sono sicuro che sia arrivato correttamente (empirico)
+    if(changed_0 == 3 || changed_1 == 3 || changed_2 == 3){
+         changed_0 = changed_2 = changed_1 = 0;
+         changed=1;
+      }
+  }
+
+  //se ho un dato disponibile sulla seriale lo uso, altrimenti faccio altro
   if (Serial.available()>0)
   { 
     iReceived = Serial.read();
@@ -142,10 +172,11 @@ void loop() {
      // onEnter Actions
     
      if (iFutureState==2 && iState==1){
-        //se ho ricevuto il comando dal bridge di aprire la finestra e non è già aperta => apro
+        //se ho ricevuto il comando dal bridge di aprire la finestra e non è già aperta => apro 
         if(state_zero!=1 && state_one!=1){
           state_zero=0;
           state_one=1;
+          // non c'è bisogno di aggiornare changed perchè il Bridge è già al corrente dello stato
         }
      }
      
