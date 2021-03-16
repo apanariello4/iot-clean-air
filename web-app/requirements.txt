@@ -2,3 +2,4 @@ Flask
 flask-sqlalchemy
 Flask-RESTful
 Flask-MQTT
+sqlalchemy-utils

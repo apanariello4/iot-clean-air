@@ -4,6 +4,8 @@ from flask_sqlalchemy import SQLAlchemy
 from datetime import datetime
 from flask_restful import Api, Resource
 from flask_mqtt import Mqtt
+from sqlalchemy_utils import UUIDType
+from uuid import UUID
 
 
 appname = "iot-clean-air"
@@ -20,10 +22,29 @@ app.config.from_object(myconfig)
 db = SQLAlchemy(app)
 
 
+def is_valid_uuid(uuid_to_test: str, version=4) -> bool:
+    """Check to see if a string is a valid uuid
+
+    Args:
+        uuid_to_test (str): uuid to test
+        version (int, optional): uuid version to use. Defaults to 4.
+
+    Returns:
+        bool: is a valid uuid or not
+    """
+    uuid_to_test = uuid_to_test.replace('-', '')
+    try:
+        val = UUID(uuid_to_test, version=version)
+    except ValueError:
+        # If it's a value error, then the string
+        # is not a valid hex code for a UUID.
+        return False
+
+
 class Sensorfeed(db.Model):
     # id arduino | window status | pollution value | timestamp
 
-    id = db.Column('id', db.Integer, primary_key=True)
+    id = db.Column('id', UUIDType(binary=False), primary_key=True)
     status = db.Column('status', db.Boolean)
     pollution = db.Column('pollution', db.Integer)
     timestamp = db.Column(db.DateTime(timezone=True),
@@ -41,17 +62,17 @@ class SensorStatus(Resource):
     def get(self):
         id = request.get_json()['id']
 
-        if id is None:
+        if is_valid_uuid(id) is False:
             return "id field is not valid", 400
 
         sensor = Sensorfeed.query.filter_by(id=id).first()
+
         if sensor is None:
             return f"No sensor with this id: {id} in db", 400
-        status = sensor.status
 
         r = {
             'id': id,
-            'status': status
+            'status': sensor.status
         }
         return r, 200
 
@@ -60,7 +81,7 @@ class SensorStatus(Resource):
         id = request.get_json()['id']
         status = request.get_json()['status']
 
-        if id is None:
+        if is_valid_uuid(id) is False:
             return "id field is not valid", 400
 
         if status is None or status not in [0, 1]:
@@ -89,7 +110,7 @@ class SensorPollution(Resource):
     def get(self):
         id = request.get_json()['id']
 
-        if id is None:
+        if is_valid_uuid(id) is False:
             return "id field is not valid", 400
 
         sensor = Sensorfeed.query.filter_by(id=id).first()
@@ -125,7 +146,7 @@ class Client(Resource):
         id = request.get_json()['id']
         status = request.get_json()['status']
 
-        if id is None:
+        if is_valid_uuid(id) is False:
             return "id field is not valid", 400
 
         if status is None or status not in [0, 1]:
