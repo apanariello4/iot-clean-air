@@ -1,7 +1,7 @@
 from flask import Flask, render_template, request, jsonify
 from config import Config
 from flask_sqlalchemy import SQLAlchemy
-from datetime import datetime
+from datetime import date, datetime
 from flask_restful import Api, Resource
 from flask_mqtt import Mqtt
 from sqlalchemy_utils import UUIDType
@@ -13,7 +13,7 @@ app = Flask(appname)
 api = Api(app)
 base_url = "/api/v1"
 host_path = "http://151.81.17.207:5000"
-mqtt = Mqtt(app)  # Need broker or exception thrown
+# mqtt = Mqtt(app)  # Need broker or exception thrown
 
 myconfig = Config
 app.config.from_object(myconfig)
@@ -36,8 +36,23 @@ def is_valid_uuid(uuid_to_test: str, version=4) -> bool:
     try:
         val = UUID(uuid_to_test, version=version)
     except ValueError:
-        # If it's a value error, then the string
-        # is not a valid hex code for a UUID.
+        return False
+
+
+def is_valid_date(date: str, date_format='%Y-%m-%dT%H%M%S') -> bool:
+    """Check if string is valid date given a date_format
+
+    Args:
+        date (str): date string
+        date_format (str, optional): format to validate against. Defaults to '%Y-%m-%dT%H%M%S'.
+
+    Returns:
+        bool: true if valid date, false otherwise
+    """
+    try:
+        date_obj = datetime.datetime.strptime(date, date_format)
+        return True
+    except ValueError:
         return False
 
 
@@ -56,6 +71,30 @@ class Sensorfeed(db.Model):
         self.pollution = pollution
 
     # aggiungi update
+
+
+class BridgePredictions(db.Model):
+
+    # region | pm_10_1h | pm_25_1h | pm_10_2h | pm_25_2h | pm_10_3h | pm_25_3h | timestamp
+
+    region = db.Column('region', db.String, primary_key=True)
+    pm_10_1h = db.Column('pm_10_1h', db.Integer)
+    pm_25_1h = db.Column('pm_25_1h', db.Integer)
+    pm_10_2h = db.Column('pm_10_2h', db.Integer)
+    pm_25_2h = db.Column('pm_25_2h', db.Integer)
+    pm_10_3h = db.Column('pm_10_3h', db.Integer)
+    pm_25_3h = db.Column('pm_25_3h', db.Integer)
+    timestamp = db.Column(db.DateTime(timezone=True), nullable=False)
+
+    def __init__(self, region, pm_10_1h, pm_25_1h, pm_10_2h, pm_25_2h, pm_10_3h, pm_25_3h, timestamp) -> None:
+        self.region = region
+        self.pm_10_1h = pm_10_1h
+        self.pm_25_1h = pm_25_1h
+        self.pm_10_2h = pm_10_2h
+        self.pm_25_2h = pm_25_2h
+        self.pm_10_3h = pm_10_3h
+        self.pm_25_3h = pm_25_3h
+        self.timestamp = timestamp
 
 
 class SensorStatus(Resource):
@@ -84,7 +123,7 @@ class SensorStatus(Resource):
         if is_valid_uuid(id) is False:
             return "id field is not valid", 400
 
-        if status is None or status not in [0, 1]:
+        if status is None or status not in {0, 1}:
             return "status field is not valid", 400
 
         sensor = Sensorfeed.query.filter_by(id=id).first()
@@ -97,7 +136,7 @@ class SensorStatus(Resource):
             if sensor.status != status:
                 sensor.status = status
                 db.session.commit()
-                mqtt.publish(f'{id}/window', payload=status)
+                #mqtt.publish(f'{id}/window', payload=status)
 
         return "OK", 200
 
@@ -126,7 +165,6 @@ class SensorPollution(Resource):
         return r, 200
 
     def post(self):
-        print(request.get_json())
         id = request.get_json()['id']
         pol = request.get_json()['pollution']
 
@@ -149,7 +187,7 @@ class Client(Resource):
         if is_valid_uuid(id) is False:
             return "id field is not valid", 400
 
-        if status is None or status not in [0, 1]:
+        if status is None or status not in {0, 1}:
             return "status field is not valid", 400
 
         sensor = Sensorfeed.query.filter_by(id=id).first()
@@ -164,6 +202,57 @@ class Client(Resource):
 
 
 api.add_resource(Client, f'{base_url}/sensor/command')
+
+
+class Predictions(Resource):
+    def get(self):
+        region = request.get_json()['region']
+
+        if region is None:
+            return None, 400
+
+        db_region = BridgePredictions.query.filter_by(region=region).first()
+
+        if not db_region:
+            return None, 400
+
+        r = {
+            'region': db_region.region,
+            'pm_10_1h': db_region.pm_10_1h,
+            'pm_25_1h': db_region.pm_25_1h,
+            'pm_10_2h': db_region.pm_10_2h,
+            'pm_25_2h': db_region.pm_25_2h,
+            'pm_10_3h': db_region.pm_10_3h,
+            'pm_25_3h': db_region.pm_25_3h,
+            'timestamp': db_region.timestamp
+        }
+
+        return r, 200
+
+    def post(self):
+        region = request.get_json()['region']
+        pm = request.get_json()['pm']
+        timestamp = request.get_json()['timestamp']
+
+        if region is None:
+            return None, 400
+
+        if pm is None or len(pm) != 6:
+            return None, 400
+
+        if is_valid_date(timestamp) is False:
+            return None, 400
+
+        db_region = BridgePredictions.query.filter_by(region=region).first()
+
+        if db_region:
+            db.session.remove(db_region)
+
+        db_region = BridgePredictions(region, *pm, timestamp)
+        db.session.add(db_region)
+        db.session.commit()
+
+        return None, 200
 
 
 @app.errorhandler(404)
