@@ -39,7 +39,7 @@ def is_valid_uuid(uuid_to_test: str, version=4) -> bool:
         return False
 
 
-def is_valid_date(date: str, date_format='%Y-%m-%dT%H%M%S') -> bool:
+def is_valid_date(date: str, date_format='%Y-%m-%d %H:%M:%S') -> bool:
     """Check if string is valid date given a date_format
 
     Args:
@@ -50,8 +50,8 @@ def is_valid_date(date: str, date_format='%Y-%m-%dT%H%M%S') -> bool:
         bool: true if valid date, false otherwise
     """
     try:
-        date_obj = datetime.datetime.strptime(date, date_format)
-        return True
+        date_obj = datetime.strptime(date, date_format)
+        return date_obj
     except ValueError:
         return False
 
@@ -224,7 +224,7 @@ class Predictions(Resource):
             'pm_25_2h': db_region.pm_25_2h,
             'pm_10_3h': db_region.pm_10_3h,
             'pm_25_3h': db_region.pm_25_3h,
-            'timestamp': db_region.timestamp
+            'timestamp': str(db_region.timestamp)
         }
 
         return r, 200
@@ -240,19 +240,23 @@ class Predictions(Resource):
         if pm is None or len(pm) != 6:
             return None, 400
 
-        if is_valid_date(timestamp) is False:
+        timestamp = is_valid_date(timestamp)
+        if timestamp is False:
             return None, 400
 
         db_region = BridgePredictions.query.filter_by(region=region).first()
 
         if db_region:
-            db.session.remove(db_region)
+            BridgePredictions.query.filter_by(region=region).delete()
 
         db_region = BridgePredictions(region, *pm, timestamp)
         db.session.add(db_region)
         db.session.commit()
 
         return None, 200
+
+
+api.add_resource(Predictions, f'{base_url}/predictions')
 
 
 @app.errorhandler(404)
