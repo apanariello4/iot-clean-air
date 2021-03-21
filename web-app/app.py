@@ -1,12 +1,11 @@
 from flask import Flask, render_template, request, jsonify
 from config import Config
 from flask_sqlalchemy import SQLAlchemy
-from datetime import date, datetime
 from flask_restful import Api, Resource
 from flask_mqtt import Mqtt
 from sqlalchemy_utils import UUIDType
-from uuid import UUID
-
+from utils import is_valid_date, is_valid_uuid
+from datetime import datetime
 
 appname = "iot-clean-air"
 app = Flask(appname)
@@ -20,40 +19,6 @@ app.config.from_object(myconfig)
 
 # db creation
 db = SQLAlchemy(app)
-
-
-def is_valid_uuid(uuid_to_test: str, version=4) -> bool:
-    """Check to see if a string is a valid uuid
-
-    Args:
-        uuid_to_test (str): uuid to test
-        version (int, optional): uuid version to use. Defaults to 4.
-
-    Returns:
-        bool: is a valid uuid or not
-    """
-    uuid_to_test = uuid_to_test.replace('-', '')
-    try:
-        val = UUID(uuid_to_test, version=version)
-    except ValueError:
-        return False
-
-
-def is_valid_date(date: str, date_format='%Y-%m-%d %H:%M:%S') -> bool:
-    """Check if string is valid date given a date_format
-
-    Args:
-        date (str): date string
-        date_format (str, optional): format to validate against. Defaults to '%Y-%m-%dT%H%M%S'.
-
-    Returns:
-        bool: true if valid date, false otherwise
-    """
-    try:
-        date_obj = datetime.strptime(date, date_format)
-        return date_obj
-    except ValueError:
-        return False
 
 
 class Sensorfeed(db.Model):
