@@ -8,12 +8,19 @@ import paho.mqtt.client as mqtt
 import uuid
 import os
 import requests
+import time
+from datetime import datetime, timedelta
+
 
 uuid_Arduino = 0
+location = 'Modena'
 path_db = r"C:\Users\Emanuele\PycharmProjects\iot-clean-air\Smart window\db_UUID"
 broker_ip = "93.66.137.202"
 # server_ip = "http://93.66.137.202:3000"  # MIO
 server_ip = "http://151.81.17.207:5000"
+threshold_pm_25 = 25  # µg/mc air
+threshold_pm_10 = 50  # µg/mc air
+prediction_1h = prediction_2h = prediction_3h = None
 
 
 class Bridge:
@@ -23,6 +30,7 @@ class Bridge:
         # La prima volta che si connette al Server gli manda il suo id in modo tale che possa sottoscriversi al topic
         self.post_state(self.windowState)
         print("Ho comunicato al server il mio ID univoco di Arduino!")
+
 
     # Connection
     def setupSerial(self):
@@ -80,6 +88,7 @@ class Bridge:
 
     def loop(self):
 
+        lasttime = time.time()
         while (True):
             # look for a byte from serial (dati da Arduino)
             if not self.ser is None:
@@ -95,6 +104,64 @@ class Bridge:
                     else:
                         # append
                         self.inbuffer.append(lastchar)
+
+            ts = time.time()
+            # Fa una Get per l'inquinamento ogni ora e prende i valori delle 3 ore successive
+            if ts - lasttime > 3600:
+                pollution_values = self.get_pollution()
+                self.evaluate_pollution(pollution_values)
+
+
+
+    def evaluete_pollution(self, pollution_values):
+
+        """
+            If Arduino find an indoor low air quality it requires the predictions of the future 3 hours and
+            makes choices with respect what has been acquired.
+            If the outside air quality is good it can open the windows for the next hours (w.r.t. predictions permissions)
+            if instead the air quality outdoor is not good, the windows remains closed
+        """
+
+        timestamp = pollution_values['timestamp']
+        pm_10_1h = pm_25_1h = pm_10_2h = pm_25_2h = pm_10_3h = pm_25_3h = None
+
+        # If the results have been updated less then 2h and 10m I can also the last hour predictions
+        if datetime.now() < timestamp + timedelta(hours=2, minutes=10):
+            pm_10_3h = pollution_values['pm_10_3h']
+            pm_25_3h = pollution_values['pm_25_3h']
+
+            # If the results have been updated less then 1h and 10m I can also the 2h predictions
+            if datetime.now() < timestamp + timedelta(hours=1, minutes=10):
+                pm_10_2h = pollution_values['pm_10_2h']
+                pm_25_2h = pollution_values['pm_25_2h']
+
+                # If the results have been updated less then 10 minutes I can take all of them
+                if datetime.now() < timestamp + timedelta(minutes=10):
+                    pm_10_1h = pollution_values['pm_10_1h']
+                    pm_25_1h = pollution_values['pm_25_1h']
+
+        # Check the air quality and decide if is right to keep the windows open
+        # Let's assume that if we have the pm 2.5 we have also the pm 10 because the sensor is the same
+        if pm_10_1h is not None:
+            if pm_10_1h < threshold_pm_10 and pm_25_1h < threshold_pm_25:
+                prediction_1h = 1
+            else:
+                prediction_1h = 0
+
+        if pm_10_2h is not None:
+            if pm_10_2h < threshold_pm_10 and pm_25_2h < threshold_pm_25:
+                prediction_2h = 1
+            else:
+                prediction_2h = 0
+
+        if pm_10_3h is not None:
+            if pm_10_3h < threshold_pm_10 and pm_25_3h < threshold_pm_25:
+                prediction_3h = 1
+            else:
+                prediction_3h = 0
+
+
+
 
     def useData(self):
         # I have received a line from the serial port. I can use it
@@ -118,12 +185,19 @@ class Bridge:
             print(self.post_state(self.windowState))
 
 
+    def get_pollution(self):
+        url = server_ip + '/api/v1/sensor/pollution'
+        myid = {'id': uuid_Arduino, 'location':location}
+        pollution_values = requests.get(url,json=myid)
+        return pollution_values.json()
+
+
     def post_state(self, status):
         # id deve essere UUID
         url = server_ip + '/api/v1/sensor/status'
-        myobj = {'id': uuid_Arduino, 'status': status}
-        x = requests.post(url, json=myobj)
-        return x
+        myinfo = {'id': uuid_Arduino, 'status': status}
+        value_sent = requests.post(url, json=myinfo)
+        return value_sent
 
 class Database:
 
