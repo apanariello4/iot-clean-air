@@ -24,8 +24,8 @@ threshold_pm_10 = 50  # µg/mc air
 class Bridge:
 
     def __init__(self):
-        self.windowState = None  # Arduino comunica lo stato della finestra al Bridge
-        # La prima volta che si connette al Server gli manda il suo id in modo tale che possa sottoscriversi al topic
+        self.windowState = None  # Arduino will communicate the state of the windows to the Bridge
+        # The first time that the Bridge will connect to the server it will send its id (used to subscribe to the topic)
         self.post_state(self.windowState)
         print("Ho comunicato al server il mio ID univoco di Arduino!")
         self.prediction_1h = self.prediction_2h = self.prediction_3h = None
@@ -108,6 +108,7 @@ class Bridge:
             if time.time() - lasttime > 3600:
                 pollution_values = self.get_pollution()
                 self.evaluete_pollution(pollution_values)
+                self.send_info_Arduino()
                 lasttime = time.time()
 
             # # Every half hour if the data has not been taken will be updated
@@ -127,6 +128,15 @@ class Bridge:
     #         self.prediction_2h = None
     #     elif self.prediction_1h is not None:
     #         self.prediction_1h = None
+
+
+    def send_info_Arduino(self):
+        if self.prediction_3h != None:
+            self.ser.write('H3')
+        elif self.prediction_2h != None:
+            self.ser.write('H2')
+        elif self.prediction_1h != None:
+            self.ser.write('H1')
 
     def evaluete_pollution(self, pollution_values):
 
@@ -192,9 +202,6 @@ class Bridge:
         if self.inbuffer[0] != b'\xff':
             return False
 
-        # Arduino può inviare più dati diversi, quindi è utile questa struttura dati
-        numval = int.from_bytes(self.inbuffer[1], byteorder='little')
-
         val = int.from_bytes(self.inbuffer[2], byteorder='little')
         print("valore sensore: ", val)
         # Se è la prima volta che il valore viene aggiornato avverto il server che avvertirà il client
@@ -212,7 +219,7 @@ class Bridge:
         return pollution_values.json()
 
     def post_state(self, status):
-        # id deve essere UUID
+        # I send the state and the uuid to the server
         url = server_ip + '/api/v1/sensor/status'
         myinfo = {'id': uuid_Arduino, 'status': status}
         value_sent = requests.post(url, json=myinfo)

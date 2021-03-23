@@ -156,6 +156,7 @@ void loop() {
   { 
     iReceived = Serial.read();
 
+    FSM_ON_OFF(iReceived);
     // default: back to the first state
     iFutureState=0;
 
