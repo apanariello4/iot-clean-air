@@ -5,7 +5,7 @@ import os
 class Config:
 
     # General Flask Config
-    SECRET_KEY = b'ergergergergegg/'  # session cookie
+    SECRET_KEY = b"D\xe75z=k\xea\x84i\x0c\x9d\xd9\xc10\x01\xbd8\x1b\xd4\x88v'G\xdf"
     # USE_PROXYFIX = True
 
     APPLICATION_ROOT = '/'
