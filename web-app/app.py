@@ -1,104 +1,34 @@
 from flask import Flask, render_template, request, jsonify
 from config import Config
-from flask_sqlalchemy import SQLAlchemy
-from datetime import date, datetime
 from flask_restful import Api, Resource
 from flask_mqtt import Mqtt
-from sqlalchemy_utils import UUIDType
-from uuid import UUID
-
+from utils import has_payload, is_valid_date, is_valid_uuid
+from db_models import db, Sensorfeed, BridgePredictions
 
 appname = "iot-clean-air"
 app = Flask(appname)
 api = Api(app)
 base_url = "/api/v1"
 host_path = "http://151.81.17.207:5000"
-# mqtt = Mqtt(app)  # Need broker or exception thrown
+
+try:
+    mqtt = Mqtt(app)  # Need broker or exception thrown
+except:
+    print(f"[ERROR] MQTT broker not found at ip {Config.MQTT_BROKER_URL}")
+    pass
 
 myconfig = Config
 app.config.from_object(myconfig)
 
 # db creation
-db = SQLAlchemy(app)
-
-
-def is_valid_uuid(uuid_to_test: str, version=4) -> bool:
-    """Check to see if a string is a valid uuid
-
-    Args:
-        uuid_to_test (str): uuid to test
-        version (int, optional): uuid version to use. Defaults to 4.
-
-    Returns:
-        bool: is a valid uuid or not
-    """
-    uuid_to_test = uuid_to_test.replace('-', '')
-    try:
-        val = UUID(uuid_to_test, version=version)
-    except ValueError:
-        return False
-
-
-def is_valid_date(date: str, date_format='%Y-%m-%d %H:%M:%S') -> bool:
-    """Check if string is valid date given a date_format
-
-    Args:
-        date (str): date string
-        date_format (str, optional): format to validate against. Defaults to '%Y-%m-%dT%H%M%S'.
-
-    Returns:
-        bool: true if valid date, false otherwise
-    """
-    try:
-        date_obj = datetime.strptime(date, date_format)
-        return date_obj
-    except ValueError:
-        return False
-
-
-class Sensorfeed(db.Model):
-    # id arduino | window status | pollution value | timestamp
-
-    id = db.Column('id', UUIDType(binary=False), primary_key=True)
-    status = db.Column('status', db.Boolean)
-    pollution = db.Column('pollution', db.Integer)
-    timestamp = db.Column(db.DateTime(timezone=True),
-                          nullable=False,  default=datetime.utcnow)
-
-    def __init__(self, id, pollution=None, status=None):
-        self.id = id
-        self.status = status
-        self.pollution = pollution
-
-    # aggiungi update
-
-
-class BridgePredictions(db.Model):
-
-    # region | pm_10_1h | pm_25_1h | pm_10_2h | pm_25_2h | pm_10_3h | pm_25_3h | timestamp
-
-    region = db.Column('region', db.String, primary_key=True)
-    pm_10_1h = db.Column('pm_10_1h', db.Integer)
-    pm_25_1h = db.Column('pm_25_1h', db.Integer)
-    pm_10_2h = db.Column('pm_10_2h', db.Integer)
-    pm_25_2h = db.Column('pm_25_2h', db.Integer)
-    pm_10_3h = db.Column('pm_10_3h', db.Integer)
-    pm_25_3h = db.Column('pm_25_3h', db.Integer)
-    timestamp = db.Column(db.DateTime(timezone=True), nullable=False)
-
-    def __init__(self, region, pm_10_1h, pm_25_1h, pm_10_2h, pm_25_2h, pm_10_3h, pm_25_3h, timestamp) -> None:
-        self.region = region
-        self.pm_10_1h = pm_10_1h
-        self.pm_25_1h = pm_25_1h
-        self.pm_10_2h = pm_10_2h
-        self.pm_25_2h = pm_25_2h
-        self.pm_10_3h = pm_10_3h
-        self.pm_25_3h = pm_25_3h
-        self.timestamp = timestamp
+#db = SQLAlchemy(app)
 
 
 class SensorStatus(Resource):
     def get(self):
+        if has_payload(request) is False:
+            return "No valid json payload", 400
+
         id = request.get_json()['id']
 
         if is_valid_uuid(id) is False:
@@ -116,6 +46,8 @@ class SensorStatus(Resource):
         return r, 200
 
     def post(self):  # post from arduino when changed window status
+        if has_payload(request) is False:
+            return "No valid json payload", 400
 
         id = request.get_json()['id']
         status = request.get_json()['status']
@@ -145,8 +77,10 @@ api.add_resource(SensorStatus, f'{base_url}/sensor/status')
 
 
 class SensorPollution(Resource):
-    # controlli su input
     def get(self):
+        if has_payload(request) is False:
+            return "No valid json payload", 400
+
         id = request.get_json()['id']
 
         if is_valid_uuid(id) is False:
@@ -165,6 +99,9 @@ class SensorPollution(Resource):
         return r, 200
 
     def post(self):
+        if has_payload(request) is False:
+            return "No valid json payload", 400
+
         id = request.get_json()['id']
         pol = request.get_json()['pollution']
 
@@ -181,6 +118,9 @@ api.add_resource(SensorPollution, f'{base_url}/sensor/pollution')
 
 class Client(Resource):
     def post(self):  # post from client
+        if has_payload(request) is False:
+            return "No valid json payload", 400
+
         id = request.get_json()['id']
         status = request.get_json()['status']
 
@@ -206,7 +146,10 @@ api.add_resource(Client, f'{base_url}/sensor/command')
 
 class Predictions(Resource):
     def get(self):
-        region = request.get_json()['region']
+        if has_payload(request) is False:
+            return "No valid json payload", 400
+
+        region = request.get_json()['region'].lower()
 
         if region is None:
             return None, 400
@@ -230,7 +173,10 @@ class Predictions(Resource):
         return r, 200
 
     def post(self):
-        region = request.get_json()['region']
+        if has_payload(request) is False:
+            return "No valid json payload", 400
+
+        region = request.get_json()['region'].lower()
         pm = request.get_json()['pm']
         timestamp = request.get_json()['timestamp']
 
@@ -291,7 +237,11 @@ def addinlista(val):
 
 if __name__ == '__main__':
 
-    db.create_all()
+   # db.create_all()
+    db.app = app
+    db.init_app(app)
+    with app.test_request_context():
+        db.create_all()
 
     port = 5000
     interface = '0.0.0.0'
