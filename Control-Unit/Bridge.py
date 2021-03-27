@@ -3,19 +3,8 @@ import numpy as np
 import urllib.request
 import serial.tools.list_ports
 import time
+import random
 from Prediction import *
-
-pi = 3.14159
-density = 1.65 * pow(10, 12)
-K = 3531.5
-
-
-def convert_pm_from_pcs_to_ugm3(concentration_pcs):
-	r25 = 0.44 * pow(10, -6)
-	vol25 = (4/3) * pi * pow(r25, 3)
-	mass25 = density * vol25
-	concentration_ugm3 = concentration_pcs * K * mass25
-	return concentration_ugm3
 
 
 class Bridge():
@@ -76,20 +65,14 @@ class Bridge():
 		numval = int.from_bytes(self.inbuffer[1], byteorder='little')
 		# print(f"numval {numval}")
 
-		concentration_PM25_pcs = int.from_bytes(self.inbuffer[2], byteorder='little', signed=False)
-		concentration_PM10_pcs = int.from_bytes(self.inbuffer[3], byteorder='little', signed=False)
+		concentration_PM25_ugm3 = int.from_bytes(self.inbuffer[2], byteorder='little', signed=False)
+		concentration_PM10_ugm3 = int.from_bytes(self.inbuffer[3], byteorder='little', signed=False)
 
-		concentration_PM25_pcs = np.interp(concentration_PM25_pcs, [0,253], [0,80000])
-		concentration_PM10_pcs = np.interp(concentration_PM10_pcs, [0,253], [0,80000])
+		concentration_PM25_ugm3 = np.interp(concentration_PM25_ugm3, [0,253], [0,500])
+		concentration_PM10_ugm3 = np.interp(concentration_PM10_ugm3, [0,253], [0,500])
 
-		# print(f"PM25 = {concentration_PM25_pcs}")
-		# print(f"PM10 = {concentration_PM10_pcs}\n")
-
-		concentration_PM25_ugm3 = convert_pm_from_pcs_to_ugm3(concentration_PM25_pcs)
-		concentration_PM10_ugm3 = convert_pm_from_pcs_to_ugm3(concentration_PM10_pcs)
 		print(f"PM25 = {concentration_PM25_ugm3}")
 		print(f"PM10 = {concentration_PM10_ugm3}\n")
-
 
 
 
@@ -99,11 +82,12 @@ if __name__== '__main__':
 	# br.setup()
 	# br.loop()
 
+
 	#TEST WITHOUT ARDUINO
 	starttime = time.time()
 	while True:
-		sensorValuePM25 = random.uniform(10.0, 100.0)
-		sensorValuePM10 = random.uniform(10.0, 100.0)
+		sensorValuePM25 = random.uniform(0, 100)
+		sensorValuePM10 = random.uniform(0, 100)
 		pr.prediction(sensorValuePM25, sensorValuePM10)
 		time.sleep(60.0 - ((time.time() - starttime) % 60.0)) # do every 60 sec
 
