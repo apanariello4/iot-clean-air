@@ -1,27 +1,23 @@
-### author: Roberto Vezzani
 
-import serial
-import serial.tools.list_ports
-import sqlite3
-from sqlite3 import Error
 import paho.mqtt.client as mqtt
-import uuid
-import os
 import requests
 import time
 from datetime import datetime, timedelta
 from DB_Arduino import *
+from SetupArduino import *
 
 
-uuid_Arduino = 0
-location = 'Modena'
-path_db = r"C:\Users\Emanuele\PycharmProjects\iot-clean-air\Smart window\db_UUID"
+
+
 # broker_ip = "93.66.137.202" # MIO
-# server_ip = "http://93.66.137.202:3000"  # MIO
-broker_ip = "151.81.17.207"
+# server_ip = "http://93.66.137.202:3000"  # Local Server
+
 server_ip = "http://151.81.17.207:5000"
 threshold_pm_25 = 25  # µg/mc air
 threshold_pm_10 = 50  # µg/mc air
+
+
+
 
 
 class Bridge:
@@ -29,7 +25,12 @@ class Bridge:
     def __init__(self):
         self.windowState = 0  # Arduino will communicate the state of the windows to the Bridge
         # The first time that the Bridge will connect to the server it will send its id (used to subscribe to the topic)
-        self.setup()
+        self.path_db = r"C:\Users\Emanuele\PycharmProjects\iot-clean-air\Smart window\db_UUID"
+        self.location = 'Modena'
+        self.broker_ip = "151.81.17.207"
+        self.uuid_Arduino = db.getName()
+        self.setupMQTT()
+        self.inbuffer, self.ser = sp.setupSerial()
         self.post_state(self.windowState)
         print("Ho comunicato al server il mio ID univoco di Arduino!")
         self.prediction_1h = self.prediction_2h = self.prediction_3h = None
@@ -40,61 +41,31 @@ class Bridge:
         self.send_info_Arduino()
 
 
-    # Connection
-    def setupSerial(self):
-        # open serial port
-        self.ser = None
-        print("list of available ports: ")
-
-        ports = serial.tools.list_ports.comports()
-        self.portname = None
-        for port in ports:
-            print(port.device)
-            print(port.description)
-            if 'arduino' in port.description.lower():
-                self.portname = port.device
-        print("connecting to " + self.portname)
-
-        try:
-            if self.portname is not None:
-                self.ser = serial.Serial(self.portname, 9600, timeout=0)
-        except:
-            self.ser = None
-
-        # self.ser.open()
-
-        # internal input buffer from serial
-        self.inbuffer = []
-
-    # Setup Client
     def setupMQTT(self):
         self.clientMQTT = mqtt.Client()
         self.clientMQTT.on_connect = self.on_connect
         self.clientMQTT.on_message = self.on_message
         print("connecting...")
-        self.clientMQTT.connect(broker_ip, 1883, 60)
+        self.clientMQTT.connect(self.broker_ip, 1883, 60)
         self.clientMQTT.loop_start()
 
     def on_connect(self, client, userdata, flags, rc):
         print("Connected with result code " + str(rc))
         # Subscribing in on_connect() means that if we lose the connection and
         # reconnect then subscriptions will be renewed.
-        self.clientMQTT.subscribe(f'{uuid_Arduino}/command')
+        self.clientMQTT.subscribe(f'{self.uuid_Arduino}/command')
 
     # The callback for when a PUBLISH message is received from the server.
     def on_message(self, client, userdata, msg):
         print(msg.topic + " " + str(msg.payload))
         # Riceve valore dal Client, lo manda ad Arduino e aggiorna il server
-        if msg.topic == f'{uuid_Arduino}/command':
+        if msg.topic == f'{self.uuid_Arduino}/command':
             print("Mandato")
             self.ser.write(msg.payload)  # can be ON or OFF
             value_returned = self.post_state(self.windowState)
             print("Ho fatto una post ed è ritornato: ", value_returned)
 
 
-    def setup(self):
-        self.setupSerial()
-        self.setupMQTT()
 
     def loop(self):
 
@@ -240,7 +211,7 @@ class Bridge:
 
     def get_pollution(self):
         url = server_ip + '/api/v1/predictions'
-        myid = {'region': location}
+        myid = {'region': self.location}
         pollution_values = requests.get(url, json=myid)
         print("Valori dal DB: ", pollution_values.json())
         return pollution_values.json()
@@ -248,14 +219,13 @@ class Bridge:
     def post_state(self, status):
         # I send the state and the uuid to the server
         url = server_ip + '/api/v1/sensor/status'
-        myinfo = {'id': uuid_Arduino, 'status': status}
+        myinfo = {'id': self.uuid_Arduino, 'status': status}
         value_sent = requests.post(url, json=myinfo)
         return value_sent
 
 
 if __name__ == '__main__':
     db = Database()
-    uuid_Arduino = db.getName()
-    print(uuid_Arduino)
+    sp = SetupConnection()
     br = Bridge()
     br.loop()

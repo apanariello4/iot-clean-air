@@ -3,7 +3,7 @@ from sqlite3 import Error
 import os
 import uuid
 
-uuid_Arduino = None
+
 path_db = r"C:\Users\Emanuele\PycharmProjects\iot-clean-air\Smart window\db_UUID"
 
 
