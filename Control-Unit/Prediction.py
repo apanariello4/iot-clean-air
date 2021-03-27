@@ -3,12 +3,9 @@ from pandas import read_csv
 from pandas import to_datetime
 from pandas import DataFrame
 from fbprophet import Prophet
-from sklearn.metrics import mean_absolute_error
-from matplotlib import pyplot as plt
 from datetime import datetime as dt
 import requests
 import csv
-import random
 import os.path
 
 
