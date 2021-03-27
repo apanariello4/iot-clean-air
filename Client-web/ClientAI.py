@@ -7,7 +7,7 @@ import requests
 # server_ip = "http://151.81.17.207:5000"   # Nello
 
 
-class ClientAI():
+class ClientAI:
 
     def __init__(self):
         self.broker_ip = "93.66.137.202"

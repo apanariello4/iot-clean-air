@@ -6,6 +6,7 @@ import uuid
 uuid_Arduino = None
 path_db = r"C:\Users\Emanuele\PycharmProjects\iot-clean-air\Smart window\db_UUID"
 
+
 class Database:
     def getName(self):
 
@@ -39,13 +40,9 @@ class Database:
                     cur.execute('''CREATE TABLE dataArduino
                                    (uuid text)''')
                     uuid_Arduino = uuid.uuid1()
-                    cur.execute("INSERT INTO dataArduino VALUES (?)",uuid_Arduino)
+                    cur.execute("INSERT INTO dataArduino VALUES (?)", uuid_Arduino)
                     print("Valore immesso")
                     conn.commit()
                     conn.close()
-        print("uuid_Arduino:",uuid_Arduino)
+        print("uuid_Arduino:", uuid_Arduino)
         return uuid_Arduino
-
-
-
-

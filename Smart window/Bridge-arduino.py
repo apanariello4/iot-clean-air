@@ -10,12 +10,15 @@ import os
 import requests
 import time
 from datetime import datetime, timedelta
+from DB_Arduino import *
+
 
 uuid_Arduino = 0
 location = 'Modena'
 path_db = r"C:\Users\Emanuele\PycharmProjects\iot-clean-air\Smart window\db_UUID"
-broker_ip = "93.66.137.202"
+# broker_ip = "93.66.137.202" # MIO
 # server_ip = "http://93.66.137.202:3000"  # MIO
+broker_ip = "151.81.17.207"
 server_ip = "http://151.81.17.207:5000"
 threshold_pm_25 = 25  # µg/mc air
 threshold_pm_10 = 50  # µg/mc air
@@ -24,11 +27,18 @@ threshold_pm_10 = 50  # µg/mc air
 class Bridge:
 
     def __init__(self):
-        self.windowState = None  # Arduino will communicate the state of the windows to the Bridge
+        self.windowState = 0  # Arduino will communicate the state of the windows to the Bridge
         # The first time that the Bridge will connect to the server it will send its id (used to subscribe to the topic)
+        self.setup()
         self.post_state(self.windowState)
         print("Ho comunicato al server il mio ID univoco di Arduino!")
         self.prediction_1h = self.prediction_2h = self.prediction_3h = None
+
+        # Take the values of the outdoor pollution and communicate them to Arduino
+        pollution_values = self.get_pollution()
+        self.evaluete_pollution(pollution_values)
+        self.send_info_Arduino()
+
 
     # Connection
     def setupSerial(self):
@@ -76,8 +86,11 @@ class Bridge:
         print(msg.topic + " " + str(msg.payload))
         # Riceve valore dal Client, lo manda ad Arduino e aggiorna il server
         if msg.topic == f'{uuid_Arduino}/command':
+            print("Mandato")
             self.ser.write(msg.payload)  # can be ON or OFF
-            self.post_state(self.windowState)
+            value_returned = self.post_state(self.windowState)
+            print("Ho fatto una post ed è ritornato: ", value_returned)
+
 
     def setup(self):
         self.setupSerial()
@@ -86,7 +99,6 @@ class Bridge:
     def loop(self):
 
         lasttime = time.time()
-        updated_values_time = time.time()
 
         while (True):
             # look for a byte from serial (dati da Arduino)
@@ -105,38 +117,51 @@ class Bridge:
                         self.inbuffer.append(lastchar)
 
             # Fa una Get per l'inquinamento ogni ora e prende i valori delle 3 ore successive
-            if time.time() - lasttime > 3600:
+            if time.time() - lasttime > 60:
                 pollution_values = self.get_pollution()
                 self.evaluete_pollution(pollution_values)
                 self.send_info_Arduino()
                 lasttime = time.time()
 
-            # # Every half hour if the data has not been taken will be updated
-            # if time.time() - updated_values_time > 1800:
-            #     self.check_update()
-
-
-    # Non mi sembra serva perchè i valori li aggiorna e li tiene aggiornati ogni mezz'ora
-    # def check_update(self):
-    #
-    #     if self.prediction_3h is not None:  # Means that also prediction_2h and prediction_2h are not None
-    #         self.prediction_1h = self.prediction_2h
-    #         self.prediction_2h = self.prediction_3h
-    #         self.prediction_3h = None
-    #     elif self.prediction_2h is not None:
-    #         self.prediction_1h = self.prediction_2h
-    #         self.prediction_2h = None
-    #     elif self.prediction_1h is not None:
-    #         self.prediction_1h = None
-
 
     def send_info_Arduino(self):
-        if self.prediction_3h != None:
-            self.ser.write('H3')
-        elif self.prediction_2h != None:
-            self.ser.write('H2')
-        elif self.prediction_1h != None:
-            self.ser.write('H1')
+        valid_hours = "Nessun dato valido dal DB"
+        # Not None: there is the value
+        # != 0: the value respect legal limits
+        """
+            Guardo quante ore successive hanno valori accettabili di inquinamento e comunico quel numero
+            Se la prossima sono sotto ai limiti di legge ma dalla seconda ora in poi l'inquinamento è alto mando H1
+            Se anche la seconda ora rispetta i limiti --> H2
+            Se li rispetta anche la terma --> H3
+            is not None: controlla che i dati siano relativi alle ore future (vedi funzione evaluete_pollution)
+            Questo controllo viene fatto ogni ora; se non arrivano nuovi dati aggiornati dalla get sulla centralina
+            La terza ora futura diventerà la seconda ora futura e la seconda la prossima.
+            Arduino sarà sempre aggiornato capendo se in quell'ora può aprire la finestra o se deve tenerla chiusa. 
+        """
+
+        if self.prediction_3h is not None:
+            valid_hours = "Dati validi delle future 3 ore!"
+            if self.prediction_1h != 0 and self.prediction_2h != 0 and self.prediction_3h != 0:
+                self.ser.write(b'H3')
+
+            elif self.prediction_1h != 0 and self.prediction_2h != 0:
+                self.ser.write(b'H2')
+
+            elif self.prediction_1h != 0:
+                self.ser.write(b'H1')
+
+        elif self.prediction_2h is not None:
+            valid_hours = "Dati validi delle future 2 ore!"
+            if self.prediction_1h != 0 and self.prediction_2h != 0:
+                self.ser.write(b'H2')
+            elif self.prediction_1h != 0:
+                self.ser.write(b'H1')
+
+        elif self.prediction_1h is not None:
+            valid_hours = "Dati validi della futura ora!"
+            if self.prediction_1h != 0:
+                self.ser.write(b'H1')
+        print(valid_hours)
 
     def evaluete_pollution(self, pollution_values):
 
@@ -147,8 +172,9 @@ class Bridge:
             if instead the outdoor air quality is not good, the windows remain closed
         """
 
-        timestamp = pollution_values['timestamp']
+        timestamp = datetime.strptime(pollution_values['timestamp'], '%Y-%m-%d %H:%M:%S')
         pm_10_1h = pm_25_1h = pm_10_2h = pm_25_2h = pm_10_3h = pm_25_3h = None
+        self.prediction_1h = self.prediction_2h = self.prediction_3h = None
 
         # If the results have been updated less then 10 minutes I can take all of them
         if datetime.now() < timestamp + timedelta(minutes=10):
@@ -209,13 +235,14 @@ class Bridge:
         if self.windowState != val and val != 2:
             self.windowState = val
             # Send the data to the Server
-
-            print(self.post_state(self.windowState))
+            value_returned = self.post_state(self.windowState)
+            print("E' cambiato lo stato della finestra (da Arduino) con ritorno: ", value_returned)
 
     def get_pollution(self):
-        url = server_ip + '/api/v1/sensor/pollution'
-        myid = {'id': uuid_Arduino, 'location': location}
+        url = server_ip + '/api/v1/predictions'
+        myid = {'region': location}
         pollution_values = requests.get(url, json=myid)
+        print("Valori dal DB: ", pollution_values.json())
         return pollution_values.json()
 
     def post_state(self, status):
@@ -226,49 +253,9 @@ class Bridge:
         return value_sent
 
 
-class Database:
-
-    def getName(self):
-
-        """ create a database connection to a SQLite database """
-        # Exists => there is also the name
-        if os.path.isfile(path_db):
-
-            conn = None
-            try:
-                conn = sqlite3.connect(path_db)
-            except Error as e:
-                print(e)
-            finally:
-                if conn:
-                    cur = conn.cursor()
-                    uuid_Arduino = cur.execute('SELECT uuid FROM dataArduino').fetchone()[0]
-                conn.close()
-
-        else:
-            conn = None
-            try:
-                conn = sqlite3.connect(path_db)
-            except Error as e:
-                print(e)
-            finally:
-                if conn:
-                    cur = conn.cursor()
-                    cur.execute('''CREATE TABLE dataArduino
-                                   (uuid text)''')
-                    uuid_Arduino = str(uuid.uuid4())
-                    cur.execute("INSERT INTO dataArduino VALUES (?)", (uuid_Arduino,))
-                    print("Valore immesso")
-                    conn.commit()
-                    conn.close()
-        print("uuid_Arduino:", uuid_Arduino)
-        return uuid_Arduino
-
-
 if __name__ == '__main__':
     db = Database()
     uuid_Arduino = db.getName()
     print(uuid_Arduino)
     br = Bridge()
-    br.setup()
     br.loop()
