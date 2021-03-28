@@ -1,6 +1,6 @@
 import serial
 import numpy as np
-#import serial.tools.list_ports
+from serial.tools.list_ports import comports
 import time
 import random
 from prediction import Prediction
@@ -13,7 +13,7 @@ class Bridge():
         self.ser = None
         print("list of available ports: ")
 
-        ports = serial.tools.list_ports.comports()
+        ports = comports()
         self.portname = None
         for port in ports:
             print(port.device)
