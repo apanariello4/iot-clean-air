@@ -1,5 +1,4 @@
 import serial
-import serial.tools.list_ports
 
 
 class SetupConnection:
@@ -25,7 +24,7 @@ class SetupConnection:
         try:
             if self.portname is not None:
                 self.ser = serial.Serial(self.portname, 9600, timeout=0)
-        except:
+        except Exception:
             self.ser = None
 
         # self.ser.open()
