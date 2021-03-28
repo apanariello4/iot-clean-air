@@ -1,4 +1,5 @@
 from flask import Flask, render_template, request, jsonify
+from flask.templating import render_template_string
 from config import Config
 from flask_restful import Api, Resource
 from flask_mqtt import Mqtt
@@ -13,7 +14,7 @@ host_path = "http://151.81.17.207:5000"
 
 try:
     mqtt = Mqtt(app)  # Need broker or exception thrown
-except:
+except Exception:
     print(f"[ERROR] MQTT broker not found at ip {Config.MQTT_BROKER_URL}")
     pass
 
@@ -21,7 +22,7 @@ myconfig = Config
 app.config.from_object(myconfig)
 
 # db creation
-#db = SQLAlchemy(app)
+# db = SQLAlchemy(app)
 
 
 class SensorStatus(Resource):
@@ -50,7 +51,7 @@ class SensorStatus(Resource):
             return "No valid json payload", 400
 
         id = request.get_json()['id']
-        status = request.get_json()['status']
+        status = int(request.get_json()['status'])
 
         if is_valid_uuid(id) is False:
             return "id field is not valid", 400
@@ -68,7 +69,7 @@ class SensorStatus(Resource):
             if sensor.status != status:
                 sensor.status = status
                 db.session.commit()
-                #mqtt.publish(f'{id}/window', payload=status)
+                mqtt.publish(f'{id}/window', payload=status)
 
         return "OK", 200
 
@@ -218,12 +219,33 @@ def testoHTML():
         return '<h1>I love IoT</h1>'
 
 
-@app.route('/lista', methods=['GET'])
-def stampalsita():
-    elenco = Sensorfeed.query.order_by(Sensorfeed.id.desc()).limit(10).all()
-    #elenco = db.q
+@app.route('/manage/<uuid>', methods=['GET', 'POST'])
+def manage_arduino(uuid):
+    # ac0a2590-85d0-11eb-8c68-3065ecc9cc2c
+    if request.method == 'GET':
+        if is_valid_uuid(uuid) is False:
+            return render_template_string('Access Denied')
+        arduino_info = Sensorfeed.query.filter_by(id=uuid).first()
 
-    return render_template('lista.html', lista=elenco)
+        return render_template('manage_arduino.html', info=arduino_info)
+    elif request.method == 'POST':
+        status = request.get_json()['status']
+        print(status)
+
+        try:
+            mqtt.publish(f'{id}/command', payload=f'{status}')
+        except NameError:
+            return "No broker enabled", 401
+
+        return "OK", 200
+
+
+@app.route('/list', methods=['GET'])
+def printlist():
+    sensor_list = Sensorfeed.query.order_by(Sensorfeed.id.desc()).all()
+    print(len(sensor_list))
+
+    return render_template('list.html', lista=sensor_list)
 
 
 @app.route('/addinlista/<val>', methods=['POST'])
@@ -237,7 +259,7 @@ def addinlista(val):
 
 if __name__ == '__main__':
 
-   # db.create_all()
+    # db.create_all()
     db.app = app
     db.init_app(app)
     with app.test_request_context():

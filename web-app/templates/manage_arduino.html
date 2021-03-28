@@ -1,0 +1,106 @@
+{% extends 'main.html' %}
+
+
+{% block content %}
+
+<table class="w3-table w3-bordered w3-striped w3-border test w3-hoverable" style="width: fit-content;">
+    <tr>
+        <td>
+            <div class="w3-center">
+                <p style="font-weight: bold;">ID</p>
+            </div>
+        </td>
+        <td>
+            <div class="w3-center">
+                <p>{{info.id}}</p>
+            </div>
+        </td>
+    </tr>
+    <tr>
+        <td>
+            <div class="w3-center">
+                <p style="font-weight: bold;">Pollution Value</p>
+            </div>
+        </td>
+        <td>
+            <div class="w3-center">
+                <p>{{info.pollution}}</p>
+            </div>
+        </td>
+    </tr>
+    <tr>
+        {% if info.status == 0 %}
+
+
+        <td>
+            <p style="font-weight: bold;">Window Status</p>
+        </td>
+        <td>
+            <div class="w3-center">
+                <p style="color: red;font-weight: bold;">Closed</p>
+            </div>
+
+            <div class="w3-padding-16"><button class="w3-btn w3-blue w3-centered" id="post-btn"> Open Window</button>
+            </div>
+        </td>
+
+        {% else %}
+
+
+        <td>
+            <p style="font-weight: bold;">Window Status</p>
+        </td>
+        <td>
+            <div class="w3-center">
+                <p style="color: green;font-weight: bold;">Open</p>
+            </div>
+            <div class="w3-padding-16"><button class="w3-btn w3-blue w3-centered" id="post-btn"> Close
+                    Window</button>
+
+        </td>
+
+        {%endif%}
+
+
+
+    </tr>
+</table>
+
+
+<div class="w3-padding-16"> <button class="w3-btn w3-blue w3-centered" onClick="window.location.reload();">
+        Refresh status</button></div>
+
+
+<input type="hidden" id="stat" value="{{ info.status }}">
+<script type="text/javascript">
+    const button = document.getElementById('post-btn');
+    var status = document.querySelector('#stat').value
+    var command = (status == 'False')
+
+    button.addEventListener('click', async _ => {
+        try {
+            const response = await fetch(window.location.href, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    "status": command
+                })
+            });
+            console.log('status val:', status, command);
+            console.log('Completed!', response);
+            if (response.ok) {
+                alert("Request sent succesfully");
+            } else {
+                alert("Request failed")
+            }
+        } catch (err) {
+            console.error(`Error: ${err}`);
+        }
+
+
+    });
+</script>
+
+{% endblock %}

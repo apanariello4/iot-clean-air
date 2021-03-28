@@ -1,7 +1,3 @@
-from os import environ, path
-import os
-
-
 class Config:
 
     # General Flask Config
@@ -31,11 +27,11 @@ class Config:
     # = 'mysql://username:password@localhost/db_name'
     SQLALCHEMY_DATABASE_URI = "sqlite:///clean_air.sqlite"
 
-    #SQLALCHEMY_ECHO = False
+    # SQLALCHEMY_ECHO = False
     SQLALCHEMY_TRACK_MODIFICATIONS = False
 
     # CACHE_TYPE = "simple"  # Flask-Caching related configs
-    #CACHE_DEFAULT_TIMEOUT = 100
+    # CACHE_DEFAULT_TIMEOUT = 100
 
     # MQTT
 

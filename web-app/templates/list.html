@@ -1,0 +1,12 @@
+{% extends 'main.html' %}
+
+{% block content %}
+<ul class="w3-ul w3-border w3-center">
+    <li>
+        <h2>List of registered sensors</h2>
+    </li>
+    {% for sensor in lista %}
+    <li>ID: <a href=manage/{{sensor.id}}>{{sensor.id}}</a>, Window Open: {{sensor.status}}</li>
+    {% endfor %}
+</ul>
+{% endblock %}
