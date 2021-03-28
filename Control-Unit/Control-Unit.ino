@@ -1,3 +1,9 @@
+#include <LiquidCrystal.h>
+LiquidCrystal lcd(12, 11, 9, 8, 7, 6);
+
+int gLed = A0;
+int yLed = A1;
+int rLed = A2;
 
 int pin1_PM25 = 2;
 int pin2_PM10 = 3;
@@ -30,9 +36,13 @@ void setup() {
   Serial.begin(9600);
   pinMode(2,INPUT); //PM2.5
   pinMode(3,INPUT); //PM10
+
+  pinMode(gLed,OUTPUT);
+  pinMode(yLed,OUTPUT);
+  pinMode(rLed,OUTPUT);
   
   starttime = millis();
-  
+  lcd.begin(16, 2);
 
 }
 
@@ -53,8 +63,8 @@ void loop() {
     ratio2 = lowpulseoccupancy2/(sampletime_ms*10.0);  // Integer percentage 0=>100
     concentration_PM10 = 1.1*pow(ratio2,3)-3.8*pow(ratio2,2)+520*ratio2+0.62; // using spec sheet curve
 
-    concentration_ugm3_PM25 = convert_pm_from_pcs_to_ugm3(concentration_PM25) + 0.5;
-    concentration_ugm3_PM10 = convert_pm_from_pcs_to_ugm3(concentration_PM10) + 0.5;
+    concentration_ugm3_PM25 = round(convert_pm_from_pcs_to_ugm3(concentration_PM25));
+    concentration_ugm3_PM10 = round(convert_pm_from_pcs_to_ugm3(concentration_PM10));
 //    Serial.println(concentration_PM25);
 //    Serial.println(concentration_ugm3_PM25);
 //    Serial.println();
@@ -62,12 +72,98 @@ void loop() {
 //    Serial.println(concentration_ugm3_PM10);
 //    Serial.println();
 
+
+    lcd.setCursor(0, 0);
+    lcd.print("PM10 ");
+    lcd.print("   ");
+    lcd.setCursor(6, 0);
+    char str[4]; // enough room for 3 numbers and one NULL character
+    snprintf(str, 4, "%3d", concentration_ugm3_PM10); // %3d = 3 digits, right aligned
+    lcd.print(str);   
+
     Serial.write(0xff);
     Serial.write(0x02);
     Serial.write((char)(map(concentration_ugm3_PM25,0,500,0,253)));
     Serial.write((char)(map(concentration_ugm3_PM10,0,500,0,253)));
     Serial.write(0xfe);
 
+    
+    if (concentration_ugm3_PM10 < 50) {
+      lcd.setCursor (0, 1);
+      for (int i = 0; i < 16; ++i)
+      {
+        lcd.write(' ');
+      }
+        
+      lcd.setCursor(4, 1);
+      lcd.print("CLEAN");
+      
+      digitalWrite(gLed, HIGH);
+      digitalWrite(yLed, LOW);
+      digitalWrite(rLed, LOW);
+    }
+   
+    if (concentration_ugm3_PM10 > 50 && concentration_ugm3_PM10 < 100) {
+      lcd.setCursor (0, 1);
+      for (int i = 0; i < 16; ++i)
+      {
+        lcd.write(' ');
+      }
+      
+      lcd.setCursor(4, 1);
+      lcd.print("GOOD");
+       
+      digitalWrite(gLed, HIGH);
+      digitalWrite(yLed, LOW);
+      digitalWrite(rLed, LOW);
+    }
+    
+    if (concentration_ugm3_PM10 > 100 && concentration_ugm3_PM10 < 200) {
+      lcd.setCursor (0, 1);
+      for (int i = 0; i < 16; ++i)
+      {
+        lcd.write(' ');
+      }
+        
+      lcd.setCursor(4, 1);
+      lcd.print("UNHEALTY");
+      
+      digitalWrite(gLed, LOW);
+      digitalWrite(yLed, HIGH);
+      digitalWrite(rLed, LOW);
+    }
+      
+    if (concentration_ugm3_PM10 > 200 && concentration_ugm3_PM10 < 300) {
+      lcd.setCursor (0, 1);
+      for (int i = 0; i < 16; ++i)
+      {
+        lcd.write(' ');
+      }   
+       
+      lcd.setCursor(4, 1);
+      lcd.print("HEAVY");
+      
+      digitalWrite(gLed, LOW);
+      digitalWrite(yLed, LOW);
+      digitalWrite(rLed, HIGH);
+    }
+
+    if (concentration_ugm3_PM10 > 300) {
+      lcd.setCursor (0, 1);
+      for (int i = 0; i < 16; ++i)
+      {
+        lcd.write(' ');
+      }
+        
+      lcd.setCursor(4, 1);
+      lcd.print("HAZARD");
+      
+      digitalWrite(gLed, LOW);
+      digitalWrite(yLed, LOW);
+      digitalWrite(rLed, HIGH);
+    } 
+
+    
     lowpulseoccupancy1 = 0;
     lowpulseoccupancy2 = 0;
     starttime = millis();
