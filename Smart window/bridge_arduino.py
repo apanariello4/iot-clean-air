@@ -2,8 +2,8 @@ import paho.mqtt.client as mqtt
 import requests
 import time
 from datetime import datetime, timedelta
-from DB_Arduino import *
-from SetupArduino import *
+from DB_Arduino import Database
+from setup_arduino import SetupConnection
 
 # broker_ip = "93.66.137.202" # Local Broker
 # server_ip = "http://93.66.137.202:3000"  # Local Server
@@ -61,7 +61,7 @@ class Bridge:
         self.location = location
         self.uuid_Arduino = db.getName()
         self.inbuffer, self.ser = sp.setupSerial()
-        mq = MQTT(self.broker_ip, self.uuid_Arduino, self.ser)
+        _ = MQTT(self.broker_ip, self.uuid_Arduino, self.ser)
         self.post_state(self.windowState)
         print("Ho comunicato al server il mio ID univoco di Arduino!")
         self.prediction_1h = self.prediction_2h = self.prediction_3h = None
@@ -77,7 +77,7 @@ class Bridge:
 
         while (True):
             # look for a byte from serial (dati da Arduino)
-            if not self.ser is None:
+            if self.ser is not None:
 
                 if self.ser.in_waiting > 0:
                     # data available from the serial port
@@ -110,7 +110,7 @@ class Bridge:
             is not None: controlla che i dati siano relativi alle ore future (vedi funzione evaluete_pollution)
             Questo controllo viene fatto ogni ora; se non arrivano nuovi dati aggiornati dalla get sulla centralina
             La terza ora futura diventerà la seconda ora futura e la seconda la prossima.
-            Arduino sarà sempre aggiornato capendo se in quell'ora può aprire la finestra o se deve tenerla chiusa. 
+            Arduino sarà sempre aggiornato capendo se in quell'ora può aprire la finestra o se deve tenerla chiusa.
         """
 
         if self.prediction_3h is not None:
@@ -138,7 +138,6 @@ class Bridge:
         print(valid_hours)
 
     def evaluete_pollution(self, pollution_values):
-
         """
             If Arduino find an indoor low air quality it requires the predictions of the future 3 hours and
             makes choices with respect what has been acquired by the pollution detection control unit.
@@ -146,7 +145,8 @@ class Bridge:
             if instead the outdoor air quality is not good, the windows remain closed
         """
 
-        timestamp = datetime.strptime(pollution_values['timestamp'], '%Y-%m-%d %H:%M:%S')
+        timestamp = datetime.strptime(
+            pollution_values['timestamp'], '%Y-%m-%d %H:%M:%S')
         pm_10_1h = pm_25_1h = pm_10_2h = pm_25_2h = pm_10_3h = pm_25_3h = None
         self.prediction_1h = self.prediction_2h = self.prediction_3h = None
 
@@ -209,7 +209,8 @@ class Bridge:
             self.windowState = val
             # Send the data to the Server
             value_returned = self.post_state(self.windowState)
-            print("E' cambiato lo stato della finestra (da Arduino) con ritorno: ", value_returned)
+            print(
+                "E' cambiato lo stato della finestra (da Arduino) con ritorno: ", value_returned)
 
     def get_pollution(self):
         url = server_ip + '/api/v1/predictions'
