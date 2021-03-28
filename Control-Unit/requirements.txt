@@ -1,6 +1,0 @@
-pandas
-fbprophet
-numpy
-serial
-sklearn
-matplotlib

@@ -1,0 +1,10 @@
+wheel
+pystan==2.19.1.1
+pandas
+numpy
+serial
+sklearn
+matplotlib
+requests
+prophet
+plotly

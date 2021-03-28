@@ -1,5 +1,3 @@
-### author: Roberto Vezzani
-
 import paho.mqtt.client as mqtt
 import requests
 
@@ -7,19 +5,20 @@ import requests
 # server_ip = "http://151.81.17.207:5000"   # Nello
 
 
-class ClientAI:
+class ClientWeb:
 
     def __init__(self):
         self.broker_ip = "93.66.137.202"
         self.server_ip = "http://151.81.17.207:5000"
-        self.uuid_Arduino = 'ac0a2590-85d0-11eb-8c68-3065ecc9cc2c'  ## l'utente deve conoscerlo
+        self.uuid_Arduino = 'ac0a2590-85d0-11eb-8c68-3065ecc9cc2c'  # l'utente deve conoscerlo
         # Solo all'inizio faccio una get per sapere lo stato della finestra
         str = self.getState()
         print(str['status'])
 
     def getState(self):
         myobj = {'id': self.uuid_Arduino}
-        value = requests.get(self.server_ip + '/api/v1/sensor/status', json=myobj)
+        value = requests.get(
+            self.server_ip + '/api/v1/sensor/status', json=myobj)
         print("Valore di stato ritornato: " + str(value.json()))
         return value.json()
 
@@ -62,6 +61,6 @@ class ClientAI:
 
 
 if __name__ == '__main__':
-    ai = ClientAI()
+    ai = ClientWeb()
     ai.setup()
     ai.loop()
