@@ -1,15 +1,13 @@
 import sqlite3
-from sqlite3 import Error
 import os
 import uuid
 
 
-path_db = r"C:\Users\Emanuele\PycharmProjects\iot-clean-air\Smart window\db_UUID"
+path_db = r'C:\Users\Emanuele\PycharmProjects\iot-clean-air\Smart window\db_UUID'
 
 
 class Database:
     def getName(self):
-
         """ create a database connection to a SQLite database """
         # Exists => there is also the name
         if os.path.isfile(path_db):
@@ -18,12 +16,13 @@ class Database:
             try:
                 conn = sqlite3.connect(path_db)
                 print(sqlite3.version)
-            except Error as e:
+            except sqlite3.Error as e:
                 print(e)
             finally:
                 if conn:
                     cur = conn.cursor()
-                    uuid_Arduino = cur.execute('SELECT uuid FROM dataArduino').fetchone()[0]
+                    uuid_Arduino = cur.execute(
+                        'SELECT uuid FROM dataArduino').fetchone()[0]
 
                 conn.close()
 
@@ -32,7 +31,7 @@ class Database:
             try:
                 conn = sqlite3.connect(path_db)
                 print(sqlite3.version)
-            except Error as e:
+            except sqlite3.Error as e:
                 print(e)
             finally:
                 if conn:
@@ -40,7 +39,8 @@ class Database:
                     cur.execute('''CREATE TABLE dataArduino
                                    (uuid text)''')
                     uuid_Arduino = uuid.uuid1()
-                    cur.execute("INSERT INTO dataArduino VALUES (?)", uuid_Arduino)
+                    cur.execute(
+                        "INSERT INTO dataArduino VALUES (?)", uuid_Arduino)
                     print("Valore immesso")
                     conn.commit()
                     conn.close()
