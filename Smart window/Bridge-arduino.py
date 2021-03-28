@@ -1,4 +1,3 @@
-
 import paho.mqtt.client as mqtt
 import requests
 import time
@@ -6,40 +5,25 @@ from datetime import datetime, timedelta
 from DB_Arduino import *
 from SetupArduino import *
 
-
-
-
-# broker_ip = "93.66.137.202" # MIO
+# broker_ip = "93.66.137.202" # Local Broker
 # server_ip = "http://93.66.137.202:3000"  # Local Server
 
 server_ip = "http://151.81.17.207:5000"
+broker_ip = "151.81.17.207"
 threshold_pm_25 = 25  # µg/mc air
 threshold_pm_10 = 50  # µg/mc air
 
+path_db = r"C:\Users\Emanuele\PycharmProjects\iot-clean-air\Smart window\db_UUID"
+location = 'Modena'
 
 
+class MQTT:
 
-
-class Bridge:
-
-    def __init__(self):
-        self.windowState = 0  # Arduino will communicate the state of the windows to the Bridge
-        # The first time that the Bridge will connect to the server it will send its id (used to subscribe to the topic)
-        self.path_db = r"C:\Users\Emanuele\PycharmProjects\iot-clean-air\Smart window\db_UUID"
-        self.location = 'Modena'
-        self.broker_ip = "151.81.17.207"
-        self.uuid_Arduino = db.getName()
+    def __init__(self, broker_ip, uuid_Arduino, ser):
+        self.broker_ip = broker_ip
+        self.uuid_Arduino = uuid_Arduino
+        self.ser = ser
         self.setupMQTT()
-        self.inbuffer, self.ser = sp.setupSerial()
-        self.post_state(self.windowState)
-        print("Ho comunicato al server il mio ID univoco di Arduino!")
-        self.prediction_1h = self.prediction_2h = self.prediction_3h = None
-
-        # Take the values of the outdoor pollution and communicate them to Arduino
-        pollution_values = self.get_pollution()
-        self.evaluete_pollution(pollution_values)
-        self.send_info_Arduino()
-
 
     def setupMQTT(self):
         self.clientMQTT = mqtt.Client()
@@ -55,17 +39,37 @@ class Bridge:
         # reconnect then subscriptions will be renewed.
         self.clientMQTT.subscribe(f'{self.uuid_Arduino}/command')
 
-    # The callback for when a PUBLISH message is received from the server.
+        # The callback for when a PUBLISH message is received from the server.
+
     def on_message(self, client, userdata, msg):
         print(msg.topic + " " + str(msg.payload))
         # Riceve valore dal Client, lo manda ad Arduino e aggiorna il server
         if msg.topic == f'{self.uuid_Arduino}/command':
             print("Mandato")
             self.ser.write(msg.payload)  # can be ON or OFF
-            value_returned = self.post_state(self.windowState)
+            value_returned = br.post_state(br.windowState)
             print("Ho fatto una post ed è ritornato: ", value_returned)
 
 
+class Bridge:
+
+    def __init__(self):
+        # The first time that the Bridge will connect to the server it will send its id (used to subscribe to the topic)
+        self.windowState = 0  # Arduino will communicate the state of the windows to the Bridge
+        self.broker_ip = broker_ip
+        self.path_db = path_db
+        self.location = location
+        self.uuid_Arduino = db.getName()
+        self.inbuffer, self.ser = sp.setupSerial()
+        mq = MQTT(self.broker_ip, self.uuid_Arduino, self.ser)
+        self.post_state(self.windowState)
+        print("Ho comunicato al server il mio ID univoco di Arduino!")
+        self.prediction_1h = self.prediction_2h = self.prediction_3h = None
+
+        # Take the values of the outdoor pollution and communicate them to Arduino
+        pollution_values = self.get_pollution()
+        self.evaluete_pollution(pollution_values)
+        self.send_info_Arduino()
 
     def loop(self):
 
@@ -93,7 +97,6 @@ class Bridge:
                 self.evaluete_pollution(pollution_values)
                 self.send_info_Arduino()
                 lasttime = time.time()
-
 
     def send_info_Arduino(self):
         valid_hours = "Nessun dato valido dal DB"
@@ -189,7 +192,6 @@ class Bridge:
                 self.prediction_3h = 1
             else:
                 self.prediction_3h = 0
-
 
     def useData(self):
         # I have received a line from the serial port. I can use it
