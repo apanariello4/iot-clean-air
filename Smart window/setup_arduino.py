@@ -1,4 +1,7 @@
 from serial.tools.list_ports import comports
+from serial import Serial
+
+
 class SetupConnection:
 
     def __init__(self):
@@ -21,7 +24,7 @@ class SetupConnection:
 
         try:
             if self.portname is not None:
-                self.ser = serial.Serial(self.portname, 9600, timeout=0)
+                self.ser = Serial(self.portname, 9600, timeout=0)
         except Exception:
             self.ser = None
 
