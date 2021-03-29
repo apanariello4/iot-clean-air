@@ -1,6 +1,4 @@
-import serial
-
-
+from serial.tools.list_ports import comports
 class SetupConnection:
 
     def __init__(self):
@@ -12,7 +10,7 @@ class SetupConnection:
         self.ser = None
         print("list of available ports: ")
 
-        ports = serial.tools.list_ports.comports()
+        ports = comports()
         self.portname = None
         for port in ports:
             print(port.device)
