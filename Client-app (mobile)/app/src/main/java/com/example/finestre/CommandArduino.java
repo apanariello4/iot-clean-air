@@ -29,18 +29,17 @@ public class CommandArduino extends AppCompatActivity {
         final String message = intent.getStringExtra(QRcodeActivity.EXTRA_MESSAGE);
         qrcode = (TextView)findViewById(R.id.qrcode_id);
         qrcode.setText(message);
-
         if (! Python.isStarted()) {
             Python.start(new AndroidPlatform(this));
         }
         Python py = Python.getInstance();
         final PyObject pyobj = py.getModule("apri_finestra");
         final PyObject pyobj_mqtt = py.getModule("chiudi_finestra");
-        final String mex = "ciaoprova";
+
         btn1.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                PyObject obj = pyobj.callAttr("main", mex);
+                PyObject obj = pyobj.callAttr("main", message);
                 tv.setText(obj.toString());
             }
         });
@@ -48,7 +47,7 @@ public class CommandArduino extends AppCompatActivity {
         btn2.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                PyObject obj2 = pyobj_mqtt.callAttr("main","ciaoprova");
+                PyObject obj2 = pyobj_mqtt.callAttr("main",message);
                 tv.setText(obj2.toString());
             }
         });
