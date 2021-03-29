@@ -211,12 +211,9 @@ def page_not_found(error):
     return 'Errore', 404
 
 
-@app.route('/')
-def testoHTML():
-    if request.accept_mimetypes['application/json']:
-        return jsonify({'text': 'I Love IoT'}), '200 OK'
-    else:
-        return '<h1>I love IoT</h1>'
+@app.route('/', methods=['GET'])
+def home():
+    return render_template('home.html')
 
 
 @app.route('/manage/<uuid>', methods=['GET', 'POST'])
