@@ -13,7 +13,7 @@ class Sensorfeed(db.Model):
     status = db.Column('status', db.Boolean)
     pollution = db.Column('pollution', db.Integer)
     timestamp = db.Column(db.DateTime(timezone=True),
-                          nullable=False,  default=datetime.utcnow)
+                          nullable=False, default=datetime.utcnow)
 
     def __init__(self, id, pollution=None, status=None):
         self.id = id
@@ -24,7 +24,6 @@ class Sensorfeed(db.Model):
 
 
 class BridgePredictions(db.Model):
-
     # region | pm_10_1h | pm_25_1h | pm_10_2h | pm_25_2h | pm_10_3h | pm_25_3h | timestamp
 
     region = db.Column('region', db.String, primary_key=True)

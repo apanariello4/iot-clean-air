@@ -14,9 +14,9 @@ def is_valid_uuid(uuid_to_test: str, version=4) -> bool:
         bool: is a valid uuid or not
     """
 
-    uuid_to_test = uuid_to_test.replace('-', '')
+    uuid_to_test = str(uuid_to_test).replace('-', '')
     try:
-        val = UUID(uuid_to_test, version=version)
+        _ = UUID(uuid_to_test, version=version)
         return True
     except ValueError:
         return False
@@ -27,7 +27,8 @@ def is_valid_date(date: str, date_format='%Y-%m-%d %H:%M:%S') -> bool:
 
     Args:
         date (str): date string
-        date_format (str, optional): format to validate against. Defaults to '%Y-%m-%dT%H%M%S'.
+        date_format (str, optional): format to validate against.
+        Defaults to '%Y-%m-%dT%H%M%S'.
 
     Returns:
         bool: true if valid date, false otherwise
@@ -50,6 +51,4 @@ def has_payload(request: request) -> bool:
         bool: true if it has valid payload, false otherwise
     """
 
-    if request.get_json() is None:
-        return False
-    return True
+    return False if request.get_json() is None else True
