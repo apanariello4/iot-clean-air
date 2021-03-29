@@ -1,5 +1,5 @@
 import paho.mqtt.client as mqtt
-import time
+
 
 class ClientAI():
 
@@ -12,7 +12,6 @@ class ClientAI():
         self.clientMQTT.connect("151.81.17.207", 1883, 60)
         self.clientMQTT.publish(f'{self.uuid_Arduino}/command', 'OFF')
         self.clientMQTT.loop_start()
-
 
     def setup(self):
         self.setupMQTT()

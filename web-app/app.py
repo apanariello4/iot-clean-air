@@ -1,4 +1,4 @@
-from flask import Flask, render_template, request, jsonify
+from flask import Flask, render_template, request
 from flask.templating import render_template_string
 from config import Config
 from flask_restful import Api, Resource
@@ -227,7 +227,6 @@ def manage_arduino(uuid):
         return render_template('manage_arduino.html', info=arduino_info)
     elif request.method == 'POST':
         status = request.get_json()['status']
-        print(status)
 
         try:
             mqtt.publish(f'{id}/command', payload=f'{status}')
