@@ -1,6 +1,5 @@
 {% extends 'main.html' %}
 
-
 {% block content %}
 
 <table class="w3-table w3-bordered w3-striped w3-border test w3-hoverable" style="width: fit-content;">
@@ -31,7 +30,6 @@
     <tr>
         {% if info.status == 0 %}
 
-
         <td>
             <p style="font-weight: bold;">Window Status</p>
         </td>
@@ -45,7 +43,6 @@
         </td>
 
         {% else %}
-
 
         <td>
             <p style="font-weight: bold;">Window Status</p>
@@ -61,17 +58,14 @@
 
         {%endif%}
 
-
-
     </tr>
 </table>
-
 
 <div class="w3-padding-16"> <button class="w3-btn w3-blue w3-centered" onClick="window.location.reload();">
         Refresh status</button></div>
 
-
 <input type="hidden" id="stat" value="{{ info.status }}">
+
 <script type="text/javascript">
     const button = document.getElementById('post-btn');
     var status = document.querySelector('#stat').value
