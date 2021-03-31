@@ -21,11 +21,16 @@ except Exception:
 myconfig = Config
 app.config.from_object(myconfig)
 
-# db creation
-# db = SQLAlchemy(app)
-
 
 class SensorStatus(Resource):
+    """Sensor status api.
+
+        -GET request return the status of the window given the uuid.
+        -POST request insert the new status of the window in the db and publish on
+        {id}/command topic to alert clients.
+
+    """
+
     def get(self):
         if has_payload(request) is False:
             return "No valid json payload", 400
@@ -78,6 +83,12 @@ api.add_resource(SensorStatus, f'{base_url}/sensor/status')
 
 
 class SensorPollution(Resource):
+    """Sensor pollution api.
+
+        -GET request returns the pollution in the area of the arduino given the uuid
+        -POST request insert in the db the pollution of the arduino given the uuid
+    """
+
     def get(self):
         if has_payload(request) is False:
             return "No valid json payload", 400
@@ -118,6 +129,12 @@ api.add_resource(SensorPollution, f'{base_url}/sensor/pollution')
 
 
 class Client(Resource):
+    """Client api
+
+        -POST request from the clients (web or mobile) that publish a mqtt message on
+        the {id}/command topic to let the arduino change the status of the window
+    """
+
     def post(self):  # post from client
         if has_payload(request) is False:
             return "No valid json payload", 400
@@ -146,6 +163,13 @@ api.add_resource(Client, f'{base_url}/sensor/command')
 
 
 class Predictions(Resource):
+    """Predictions api.
+
+        -GET request returns the predictions of pollution value for the next 3 hours
+        given the region.
+        -POST request insert the predictions in the db.
+    """
+
     def get(self):
         if has_payload(request) is False:
             return "No valid json payload", 400
@@ -218,14 +242,25 @@ def home():
 
 @app.route('/manage/<uuid>', methods=['GET', 'POST'])
 def manage_arduino(uuid):
-    # ac0a2590-85d0-11eb-8c68-3065ecc9cc2c
+    """Page to manage the arduino.
+
+    We can read information and send open/close commands.
+    """
     if request.method == 'GET':
         if is_valid_uuid(uuid) is False:
-            return render_template_string('Access Denied')
+            return render_template_string('Arduino not found')
         arduino_info = Sensorfeed.query.filter_by(id=uuid).first()
 
+        if arduino_info is None:
+            return render_template_string('Arduino not found')
+
         return render_template('manage_arduino.html', info=arduino_info)
+
     elif request.method == 'POST':
+        """When open/close button in this page gets pressed we publish a mqtt message
+        to open/close the window.
+
+        """
         status = request.get_json()['status']
 
         try:
@@ -238,6 +273,10 @@ def manage_arduino(uuid):
 
 @app.route('/list', methods=['GET'])
 def printlist():
+    """List of all the arduinos registerede in the db.
+
+
+    """
     sensor_list = Sensorfeed.query.order_by(Sensorfeed.id.desc()).all()
     print(len(sensor_list))
 
@@ -257,10 +296,10 @@ if __name__ == '__main__':
 
     # db.create_all()
     db.app = app
-    db.init_app(app)
+    db.init_app(app)  # initialize the db
     with app.test_request_context():
         db.create_all()
 
     port = 5000
     interface = '0.0.0.0'
-    app.run(host=interface, port=port)
+    app.run(host=interface, port=port)  # start the server
