@@ -13,6 +13,6 @@ serial
 sklearn
 matplotlib
 requests
-prophet
+prophet==1.0
 plotly
 pyserial
