@@ -1,0 +1,38 @@
+
+
+<RelativeLayout
+android:layout_height="wrap_content"
+android:layout_width="400dp"
+xmlns:android="http://schemas.android.com/apk/res/android">
+<LinearLayout
+    android:layout_height="wrap_content"
+    android:layout_width="match_parent"
+    android:padding="5dp"
+    android:layout_toLeftOf="@+id/btn_delete"
+    android:orientation="vertical">
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:id="@+id/txt_subject"/>
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:id="@+id/txt_date"/>
+</LinearLayout>
+<ImageButton
+    android:layout_width="wrap_content"
+    android:layout_height="wrap_content"
+    android:layout_alignParentRight="true"
+    android:layout_centerVertical="true"
+    android:src="@android:drawable/ic_menu_delete"
+    android:id="@+id/btn_delete"
+    />
+
+    <Button
+        android:layout_span="2"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:onClick="salva"
+        android:text="Salva"/>
+
+</RelativeLayout>

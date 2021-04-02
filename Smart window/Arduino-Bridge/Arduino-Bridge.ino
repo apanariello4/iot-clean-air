@@ -61,7 +61,7 @@ void loop() {
   
         //se supero la soglia di CO2 valuto se settare i valori per chiudere la finestra
         if(ccs.geteCO2()>1000){
-          // I can open the the window if it is not already open and if the outdoor pollution is enough good
+          // I can open the the window if it is not already open and if the outdoor pollution is good enough
           if(state_zero!=1 && state_one!=1 && can_open == 1){
               state_zero=0; 
               state_one=1;

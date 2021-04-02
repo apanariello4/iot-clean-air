@@ -37,9 +37,9 @@ public class QRcodeActivity extends AppCompatActivity {
                 runOnUiThread(new Runnable() {
                     @Override
                     public void run() {
-                       Toast.makeText(QRcodeActivity.this, result.getText(), Toast.LENGTH_SHORT).show();
+                       //Toast.makeText(QRcodeActivity.this, result.getText(), Toast.LENGTH_SHORT).show();
                        // Toast toast = Toast.makeText(QRcodeActivity.this, result.getText(), Toast.LENGTH_SHORT);
-                        Intent intent=new Intent(QRcodeActivity.this, CommandArduino.class);
+                        Intent intent=new Intent(QRcodeActivity.this, MainActivity.class);
                         intent.putExtra(EXTRA_MESSAGE, result.getText());
                         startActivity(intent);
 

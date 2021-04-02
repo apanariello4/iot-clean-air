@@ -1,0 +1,5 @@
+<resources>
+    <string name="app_name">Finestre</string>
+    <string name="apri_finestra">APRI FINESTRA</string>
+    <string name="chiudi_finestra">CHIUDI FINESTRA</string>
+</resources>
