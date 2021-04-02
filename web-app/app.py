@@ -32,10 +32,8 @@ class SensorStatus(Resource):
     """
 
     def get(self):
-        if has_payload(request) is False:
-            return "No valid json payload", 400
 
-        id = request.get_json()['id']
+        id = request.args.get('uuid', default=None)
 
         if is_valid_uuid(id) is False:
             return "id field is not valid", 400
@@ -70,13 +68,15 @@ class SensorStatus(Resource):
             sf = Sensorfeed(id, status=status)
             db.session.add(sf)
             db.session.commit()
-        else:
-            if sensor.status != status:
-                sensor.status = status
-                db.session.commit()
-                mqtt.publish(f'{id}/window', payload=status)
+            mqtt.publish(f'{id}/window', payload=status)
+            return "OK", 201
 
-        return "OK", 200
+        elif sensor.status != status:
+            sensor.status = status
+            db.session.commit()
+            mqtt.publish(f'{id}/window', payload=status)
+
+        return "OK", 204
 
 
 api.add_resource(SensorStatus, f'{base_url}/sensor/status')
@@ -90,10 +90,8 @@ class SensorPollution(Resource):
     """
 
     def get(self):
-        if has_payload(request) is False:
-            return "No valid json payload", 400
 
-        id = request.get_json()['id']
+        id = request.args.get('uuid', default=None)
 
         if is_valid_uuid(id) is False:
             return "id field is not valid", 400
@@ -117,12 +115,19 @@ class SensorPollution(Resource):
         id = request.get_json()['id']
         pol = request.get_json()['pollution']
 
-        sf = Sensorfeed(id, pollution=pol)
+        sensor = Sensorfeed.query.filter_by(id=id).first()
+
+        if sensor is None:
+            return "No arduino with that id in db", 404
+
+        BridgePredictions.query.filter_by(id=id).delete()
+
+        sf = Sensorfeed(id, status=sensor.status, pollution=pol)
 
         db.session.add(sf)
         db.session.commit()
 
-        return None, 200
+        return None, 201
 
 
 api.add_resource(SensorPollution, f'{base_url}/sensor/pollution')
@@ -151,12 +156,12 @@ class Client(Resource):
         sensor = Sensorfeed.query.filter_by(id=id).first()
 
         if sensor is None:
-            return "No sensors found", 400
+            return "No sensors found", 404
         else:
             if sensor.status != status:
                 mqtt.publish(f'{id}/command', payload=f'{status}')
 
-        return None, 200
+        return None, 204
 
 
 api.add_resource(Client, f'{base_url}/sensor/command')
@@ -171,18 +176,18 @@ class Predictions(Resource):
     """
 
     def get(self):
-        if has_payload(request) is False:
-            return "No valid json payload", 400
 
-        region = request.get_json()['region'].lower()
+        region: str = request.args.get('region', default=None)
 
         if region is None:
             return None, 400
 
+        region = region.lower()
+
         db_region = BridgePredictions.query.filter_by(region=region).first()
 
         if not db_region:
-            return None, 400
+            return "Region not present in db", 404
 
         r = {
             'region': db_region.region,
@@ -224,7 +229,7 @@ class Predictions(Resource):
         db.session.add(db_region)
         db.session.commit()
 
-        return None, 200
+        return None, 201
 
 
 api.add_resource(Predictions, f'{base_url}/predictions')
@@ -264,7 +269,7 @@ def manage_arduino(uuid):
         status = request.get_json()['status']
 
         try:
-            mqtt.publish(f'{id}/command', payload=f'{status}')
+            mqtt.publish(f'{uuid}/command', payload=f'{status}')
         except NameError:
             return "No broker enabled", 401
 
@@ -273,7 +278,7 @@ def manage_arduino(uuid):
 
 @app.route('/list', methods=['GET'])
 def printlist():
-    """List of all the arduinos registerede in the db.
+    """List of all the arduinos registered in the db.
 
 
     """
