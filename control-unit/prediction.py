@@ -1,9 +1,8 @@
 import pandas as pd
-from prophet import Prophet
+from fbprophet import Prophet
 from datetime import datetime as dt
 import requests
 import csv
-
 
 date = []
 host_path = "http://151.81.17.207:5000"
@@ -14,32 +13,26 @@ dataset_pm10_1 = "./dataset/pm10_modena_parco_ferrari_2019.csv"
 dataset_pm10_2 = "./dataset/pm10_modena_parco_ferrari_2020.csv"
 dataset_pm10_3 = "./dataset/pm10_modena_parco_ferrari_sensor.csv"
 
-# sensorValuePM25 = random.uniform(10.0, 100.0)
-# sensorValuePM10 = random.uniform(10.0, 100.0)
-
 
 class Prediction():
 
-    def load_datasets(self):
-        df_pm25_1 = pd.read_csv(dataset_pm25_1, sep=',')
-        df_pm25_1 = df_pm25_1[['DATA_INIZIO', 'VALORE']]
-        df_pm25_2 = pd.read_csv(dataset_pm25_2, sep=',')
-        df_pm25_2 = df_pm25_2[['DATA_INIZIO', 'VALORE']]
-        df_pm10_1 = pd.read_csv(dataset_pm10_1, sep=',')
-        df_pm10_1 = df_pm10_1[['DATA_INIZIO', 'VALORE']]
-        df_pm10_2 = pd.read_csv(dataset_pm10_2, sep=',')
-        df_pm10_2 = df_pm10_2[['DATA_INIZIO', 'VALORE']]
+    def load_dataset(self, dataset):
+        try:
+            with open(dataset) as file:
+                df = pd.read_csv(file, sep=',')
+                df = df[['DATA_INIZIO', 'VALORE']]
+        except FileNotFoundError:
+            print("File not found")
 
-        return df_pm25_1, df_pm25_2, df_pm10_1, df_pm10_2
+        return df
 
+
+    # Insert the new sensor values
     def update_datasets(self, time, sensorValuePM25, sensorValuePM10):
-        # Append the values of time and sensorValue in csv files
+        # Append the values of time, sensorValuePM25 and sensorValuePM10 in csv files
         with open(dataset_pm25_3, mode='a', newline='') as csv_file:
             fieldnames = ["DATA_INIZIO", "VALORE"]
             writer = csv.DictWriter(csv_file, fieldnames=fieldnames)
-
-            # if not os.path.isfile(dataset_pm25_3):
-            # 	writer.writeheader()
             writer.writerow({"DATA_INIZIO": time,
                              "VALORE": int(round(sensorValuePM25, 0))
                              })
@@ -47,13 +40,12 @@ class Prediction():
         with open(dataset_pm10_3, mode='a', newline='') as csv_file:
             fieldnames = ["DATA_INIZIO", "VALORE"]
             writer = csv.DictWriter(csv_file, fieldnames=fieldnames)
-
-            # if not os.path.isfile(dataset_pm10_3):
-            # 	writer.writeheader()
             writer.writerow({"DATA_INIZIO": time,
                              "VALORE": int(round(sensorValuePM10, 0))
                              })
 
+
+    # Make the prediction with Prophet. Additional variables of daily seasonality and Italian holidays are set.
     def make_prediction(self, df, time_dataset):
         df.columns = ['ds', 'y']
         train = df
@@ -64,11 +56,13 @@ class Prediction():
         model.fit(train)
         future = list()
 
+        # Predict the next 3 hours values
         for i in range(3):
             date = time_dataset
             future.append([date])
         future = pd.DataFrame(future)
         future.columns = ['ds']
+
         # use the model to make a forecast
         forecast = model.predict(future)
         forecast[['yhat']] = forecast[['yhat']].round(0).astype('int32')
@@ -76,24 +70,36 @@ class Prediction():
 
         return pred_df
 
-    def prediction(self, sensorValuePM25, sensorValuePM10):
-        df_pm25_1, df_pm25_2, df_pm10_1, df_pm10_2 = self.load_datasets()
 
+    def post_values(self, dict):
+        r = requests.post(host_path + "/api/v1/predictions", json=dict)
+        return r
+
+    def get_values(self, region):
+        g = requests.get(host_path + "/api/v1/predictions", json={"region": region})
+        return g
+
+
+    def prediction(self, sensorValuePM25, sensorValuePM10):
+        # Load the datasets of PM25 and PM10, registered in Modena during 2019-2020
+        df_pm25_1 = self.load_dataset(dataset_pm25_1)
+        df_pm25_2 = self.load_dataset(dataset_pm25_2)
+        df_pm10_1 = self.load_dataset(dataset_pm10_1)
+        df_pm10_2 = self.load_dataset(dataset_pm10_2)
+
+        # Get the current time
         timestamp = dt.now()
         time_dataset = timestamp.strftime('%d/%m/%Y')
         self.update_datasets(time_dataset, sensorValuePM25, sensorValuePM10)
 
-        df_pm25_3 = pd.read_csv(dataset_pm25_3, sep=',')
-        df_pm25_3 = df_pm25_3[['DATA_INIZIO', 'VALORE']]
-        df_pm10_3 = pd.read_csv(dataset_pm10_3, sep=',')
-        df_pm10_3 = df_pm10_3[['DATA_INIZIO', 'VALORE']]
+        df_pm25_3 = self.load_dataset(dataset_pm25_3)
+        df_pm10_3 = self.load_dataset(dataset_pm10_3)
 
         # df_pm25_3[['DATA_INIZIO']] = dt.strptime(df_pm25_3[['DATA_INIZIO']], '%d/%m/%Y')
         # df_pm10_3[['DATA_INIZIO']] = dt.strptime(df_pm10_3[['DATA_INIZIO']], '%d/%m/%Y')
 
         df_pm25 = pd.concat([df_pm25_1, df_pm25_2, df_pm25_3])
         df_pm10 = pd.concat([df_pm10_1, df_pm10_2, df_pm10_3])
-        # print(df.tail())
 
         pred_df_pm25 = self.make_prediction(df_pm25, time_dataset)
         pred_df_pm10 = self.make_prediction(df_pm10, time_dataset)
@@ -101,6 +107,7 @@ class Prediction():
         print(pred_df_pm25)
         print(pred_df_pm10)
 
+        # Set the values to be sent to the server (time in the server format, predicted values)
         time_server = timestamp.strftime('%Y-%m-%d %H:%M:%S')
         pm25 = pred_df_pm25["yhat"].values.tolist()
         pm10 = pred_df_pm10["yhat"].values.tolist()
@@ -109,19 +116,10 @@ class Prediction():
         print(pred_dict)
 
         # POST values
-        r = requests.post(host_path + "/api/v1/predictions", json=pred_dict)
+        r = self.post_values(pred_dict)
         print(r)
 
-        g = requests.get(host_path + "/api/v1/predictions",
-                         json={"region": "Modena"})
+        # GET values
+        g = self.get_values(region="Modena")
         print(g.json())
 
-
-# def test():
-# 	g = requests.get(host_path + "/api/v1/predictions", json= {"region": "Modena"})
-# 	print(g.json())
-
-
-# if __name__== '__main__':
-# 	pr = Prediction()
-# 	pr.prediction()

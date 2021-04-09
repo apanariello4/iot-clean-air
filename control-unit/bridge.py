@@ -59,22 +59,18 @@ class Bridge():
         if self.inbuffer[0] != b'\xff':  # Start of packet
             return False
 
-        # Packet that stars with xff, has size 3 and ends with xfe
-        # numval = int.from_bytes(self.inbuffer[1], byteorder='little')
-        # print(f"numval {numval}")
+        # Take bytes 2 and 3 from the buffer
+        concentration_PM25_ugm3 = int.from_bytes(self.inbuffer[2], byteorder='little', signed=False)
+        concentration_PM10_ugm3 = int.from_bytes(self.inbuffer[3], byteorder='little', signed=False)
 
-        concentration_PM25_ugm3 = int.from_bytes(
-            self.inbuffer[2], byteorder='little', signed=False)
-        concentration_PM10_ugm3 = int.from_bytes(
-            self.inbuffer[3], byteorder='little', signed=False)
-
-        concentration_PM25_ugm3 = np.interp(
-            concentration_PM25_ugm3, [0, 253], [0, 500])
-        concentration_PM10_ugm3 = np.interp(
-            concentration_PM10_ugm3, [0, 253], [0, 500])
-
+        # Map to return in the original range [0,500]
+        concentration_PM25_ugm3 = np.interp(concentration_PM25_ugm3, [0, 253], [0, 500])
+        concentration_PM10_ugm3 = np.interp(concentration_PM10_ugm3, [0, 253], [0, 500])
         print(f"PM25 = {concentration_PM25_ugm3}")
         print(f"PM10 = {concentration_PM10_ugm3}\n")
+
+        # Call the prediction function from the Prediction class
+        pr.prediction(concentration_PM25_ugm3, concentration_PM10_ugm3)
 
 
 if __name__ == '__main__':
@@ -89,5 +85,4 @@ if __name__ == '__main__':
         sensorValuePM25 = random.uniform(0, 100)
         sensorValuePM10 = random.uniform(0, 100)
         pr.prediction(sensorValuePM25, sensorValuePM10)
-        time.sleep(60.0 - ((time.time() - starttime) %
-                   60.0))  # do every 60 sec
+        time.sleep(60.0 - ((time.time() - starttime) % 60.0))  # do every 60 sec
