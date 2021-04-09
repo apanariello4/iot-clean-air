@@ -1,8 +1,12 @@
 {% extends 'main.html' %}
 
 {% block content %}
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"
+    integrity="sha512-CNgIRecGo7nphbeZ04Sc13ka07paqdeTu0WR1IM4kNcpmBAUSHSQX0FslNhTDadL4O5SAGapGt4FodqL8My0mA=="
+    crossorigin="anonymous"></script>
 
-<table class="w3-table w3-bordered w3-striped w3-border test w3-hoverable" style="width: fit-content;">
+<table class="w3-table-all w3-hoverable w3-centered"
+    style="border: 1px; margin-left: 25%; margin-right: 10%;max-width:50%">
     <tr>
         <td>
             <div class="w3-center">
@@ -31,21 +35,26 @@
         {% if info.status == 0 %}
 
         <td>
-            <p style="font-weight: bold;">Window Status</p>
+            <div class="w3-center">
+                <p style="font-weight: bold;">Window Status</p>
+            </div>
         </td>
         <td>
             <div class="w3-center">
                 <p style="color: red;font-weight: bold;">Closed</p>
             </div>
 
-            <div class="w3-padding-16"><button class="w3-btn w3-blue w3-centered" id="post-btn"> Open Window</button>
+            <div class="w3-padding-16"><button class="w3-btn w3-blue w3-centered" id="post-btn"> Open
+                    Window</button>
             </div>
         </td>
 
         {% else %}
 
         <td>
-            <p style="font-weight: bold;">Window Status</p>
+            <div class="w3-center">
+                <p style="font-weight: bold;">Window Status</p>
+            </div>
         </td>
         <td>
             <div class="w3-center">
@@ -64,6 +73,10 @@
 <div class="w3-padding-16"> <button class="w3-btn w3-blue w3-centered" onClick="window.location.reload();">
         Refresh status</button></div>
 
+<div class="container">
+    <div id="qrcode" style="width: auto; height: auto; padding: 15px; "></div>
+</div>
+
 <input type="hidden" id="stat" value="{{ info.status }}">
 
 <script type="text/javascript">
@@ -71,9 +84,20 @@
     var status = document.querySelector('#stat').value
     var command = (status == 'False')
 
+    var this_path = window.location.href
+
+    var uuid = this_path.substring(this_path.lastIndexOf('/') + 1);
+
+    var qrc = new QRCode(document.getElementById("qrcode"), {
+        width: 128,
+        height: 128
+    });
+
+    qrc.makeCode(uuid)
+
     button.addEventListener('click', async _ => {
         try {
-            const response = await fetch(window.location.href, {
+            const response = await fetch(this_path, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json'
