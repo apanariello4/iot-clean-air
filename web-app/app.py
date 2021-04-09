@@ -10,7 +10,7 @@ appname = "iot-clean-air"
 app = Flask(appname)
 api = Api(app)
 base_url = "/api/v1"
-host_path = "http://151.81.17.207:5000"
+host_path = "http://151.81.28.142:5000"
 
 try:
     mqtt = Mqtt(app)  # Need broker or exception thrown
@@ -268,8 +268,10 @@ def manage_arduino(uuid):
         """
         status = request.get_json()['status']
 
+        command = 'OFF' if status == 0 else 'ON'
+
         try:
-            mqtt.publish(f'{uuid}/command', payload=f'{status}')
+            mqtt.publish(f'{uuid}/command', payload=f'{command}')
         except NameError:
             return "No broker enabled", 401
 
