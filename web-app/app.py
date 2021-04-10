@@ -1,10 +1,11 @@
-from flask import Flask, render_template, request
+from flask import Flask, render_template, request, send_from_directory
 from flask.templating import render_template_string
 from config import Config
 from flask_restful import Api, Resource
 from flask_mqtt import Mqtt
 from utils import has_payload, is_valid_date, is_valid_uuid
-from db_models import db, Sensorfeed, BridgePredictions
+from db_models import db, Sensor, BridgePredictions
+import os
 
 appname = "iot-clean-air"
 app = Flask(appname)
@@ -15,7 +16,8 @@ host_path = "http://151.81.28.142:5000"
 try:
     mqtt = Mqtt(app)  # Need broker or exception thrown
 except Exception:
-    print(f"[ERROR] MQTT broker not found at ip {Config.MQTT_BROKER_URL}")
+    print(
+        f"\033[91m [ERROR] MQTT broker not found at ip {Config.MQTT_BROKER_URL} \033[00m")
     pass
 
 myconfig = Config
@@ -38,7 +40,7 @@ class SensorStatus(Resource):
         if is_valid_uuid(id) is False:
             return "id field is not valid", 400
 
-        sensor = Sensorfeed.query.filter_by(id=id).first()
+        sensor = Sensor.query.filter_by(id=id).first()
 
         if sensor is None:
             return f"No sensor with this id: {id} in db", 400
@@ -62,10 +64,10 @@ class SensorStatus(Resource):
         if status is None or status not in {0, 1}:
             return "status field is not valid", 400
 
-        sensor = Sensorfeed.query.filter_by(id=id).first()
+        sensor = Sensor.query.filter_by(id=id).first()
 
         if sensor is None:
-            sf = Sensorfeed(id, status=status)
+            sf = Sensor(id, status=status)
             db.session.add(sf)
             db.session.commit()
             mqtt.publish(f'{id}/window', payload=status)
@@ -96,7 +98,7 @@ class SensorPollution(Resource):
         if is_valid_uuid(id) is False:
             return "id field is not valid", 400
 
-        sensor = Sensorfeed.query.filter_by(id=id).first()
+        sensor = Sensor.query.filter_by(id=id).first()
 
         if sensor is None:
             return f"No sensor with this id: {id} in db", 400
@@ -115,14 +117,14 @@ class SensorPollution(Resource):
         id = request.get_json()['id']
         pol = request.get_json()['pollution']
 
-        sensor = Sensorfeed.query.filter_by(id=id).first()
+        sensor = Sensor.query.filter_by(id=id).first()
 
         if sensor is None:
             return "No arduino with that id in db", 404
 
         BridgePredictions.query.filter_by(id=id).delete()
 
-        sf = Sensorfeed(id, status=sensor.status, pollution=pol)
+        sf = Sensor(id, status=sensor.status, pollution=pol)
 
         db.session.add(sf)
         db.session.commit()
@@ -153,7 +155,7 @@ class Client(Resource):
         if status is None or status not in {0, 1}:
             return "status field is not valid", 400
 
-        sensor = Sensorfeed.query.filter_by(id=id).first()
+        sensor = Sensor.query.filter_by(id=id).first()
 
         if sensor is None:
             return "No sensors found", 404
@@ -237,12 +239,17 @@ api.add_resource(Predictions, f'{base_url}/predictions')
 
 @app.errorhandler(404)
 def page_not_found(error):
-    return 'Errore', 404
+    return 'Error', 404
+
+
+@app.route('/login', methods=['GET'])
+def login():
+    return render_template('login.html')
 
 
 @app.route('/', methods=['GET'])
 def home():
-    return render_template('home.html')
+    return render_template('main.html')
 
 
 @app.route('/manage/<uuid>', methods=['GET', 'POST'])
@@ -254,7 +261,7 @@ def manage_arduino(uuid):
     if request.method == 'GET':
         if is_valid_uuid(uuid) is False:
             return render_template_string('Arduino not found')
-        arduino_info = Sensorfeed.query.filter_by(id=uuid).first()
+        arduino_info = Sensor.query.filter_by(id=uuid).first()
 
         if arduino_info is None:
             return render_template_string('Arduino not found')
@@ -282,21 +289,16 @@ def manage_arduino(uuid):
 def printlist():
     """List of all the arduinos registered in the db.
 
-
     """
-    sensor_list = Sensorfeed.query.order_by(Sensorfeed.id.desc()).all()
-    print(len(sensor_list))
+    sensor_list = Sensor.query.order_by(Sensor.id.desc()).all()
 
     return render_template('list.html', lista=sensor_list)
 
 
-@app.route('/addinlista/<val>', methods=['POST'])
-def addinlista(val):
-    sf = Sensorfeed(val)
-
-    db.session.add(sf)
-    db.session.commit()
-    return str(sf.id)
+@app.route('/favicon.ico')
+def favicon():
+    return send_from_directory(os.path.join(app.root_path, 'static'),
+                               'favicon.ico', mimetype='image/vnd.microsoft.icon')
 
 
 if __name__ == '__main__':

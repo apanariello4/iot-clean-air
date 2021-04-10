@@ -6,7 +6,7 @@ from datetime import datetime
 db = SQLAlchemy()
 
 
-class Sensorfeed(db.Model):
+class Sensor(db.Model):
     # id arduino | window status | pollution value | timestamp
 
     id = db.Column('id', UUIDType(binary=False), primary_key=True)

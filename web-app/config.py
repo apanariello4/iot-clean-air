@@ -8,7 +8,7 @@ class Config:
 
     FLASK_APP = 'app.py'
     FLASK_RUN_HOST = '0.0.0.0'
-    FLASK_RUN_PORT = 80
+    FLASK_RUN_PORT = 5000
 
     FLASK_DEBUG = 0
     FLASK_ENV = "development"
@@ -35,7 +35,7 @@ class Config:
 
     # MQTT
 
-    MQTT_BROKER_URL = '151.81.17.207'
+    MQTT_BROKER_URL = '151.81.28.142'
     MQTT_BROKER_PORT = 1883
     MQTT_USERNAME = 'user'
     MQTT_PASSWORD = 'secret'
