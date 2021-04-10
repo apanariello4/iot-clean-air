@@ -187,6 +187,7 @@ void loop() {
     if (iState==3 && iReceived=='F') iFutureState=4;
     if (iState==4 && iReceived=='O') iFutureState=1;
     if (iState==2 && iReceived=='O') iFutureState=1;
+    if (iState==1 && iReceived=='O') iFutureState=1;
 
     // FSM: used to understand the time in which the window can remain open
     if (iState==0 && iReceived=='H') iFutureState=5;

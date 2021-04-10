@@ -1,23 +1,17 @@
 package com.example.finestre;
 
-import android.app.Activity;
 import android.content.Intent;
 import android.os.Bundle;
-import android.view.LayoutInflater;
 import android.view.View;
-import android.view.ViewGroup;
 import android.widget.Toast;
 
 import androidx.annotation.NonNull;
-import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
 
 import com.budiyev.android.codescanner.CodeScanner;
 import com.budiyev.android.codescanner.CodeScannerView;
 import com.budiyev.android.codescanner.DecodeCallback;
 import com.google.zxing.Result;
-
-import static android.provider.AlarmClock.EXTRA_MESSAGE;
 
 public class QRcodeActivity extends AppCompatActivity {
     private CodeScanner mCodeScanner;

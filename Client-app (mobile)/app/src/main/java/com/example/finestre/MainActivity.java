@@ -25,11 +25,10 @@ import androidx.appcompat.app.AlertDialog;
 import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
 
-import static android.provider.AlarmClock.EXTRA_MESSAGE;
-
 public class MainActivity extends Activity {
 
 	public static final String EXTRA_UUID = "Nessun UUID";
+	public static final String EXTRA_LOCATION = "Luogo non definito";
 	private static final int REQUEST_CAMERA_RESULT = 1;
 	private DbManager db=null;
 	private CursorAdapter adapter;
@@ -40,7 +39,7 @@ public class MainActivity extends Activity {
 
 	private OnClickListener clickListener=new OnClickListener() {
 		@Override
-		public void onClick(View v) 
+		public void onClick(View v)
 		{
 			int position=listview.getPositionForView(v);
 			long id=adapter.getItemId(position);
@@ -53,6 +52,7 @@ public class MainActivity extends Activity {
 	protected void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
 		setContentView(R.layout.activity_main);
+
 
 		db = new DbManager(this);
 		listview = (ListView) findViewById(R.id.listview);
@@ -109,8 +109,10 @@ public class MainActivity extends Activity {
 				Cursor crs = adapter.getCursor();
 				crs.moveToPosition(position);
 				String uuid = crs.getString(crs.getColumnIndex(DatabaseStrings.FIELD_SUBJECT));
+				String location = crs.getString(crs.getColumnIndex(DatabaseStrings.FIELD_LOCATION));
 				Intent intent=new Intent(MainActivity.this, CommandArduino.class);
 				intent.putExtra(EXTRA_UUID, uuid);
+				intent.putExtra(EXTRA_LOCATION, location);
 				startActivity(intent);
 
 			}
@@ -136,7 +138,7 @@ public class MainActivity extends Activity {
 
 
 
-	
+
 	public void salva(View v) {
 		EditText sub = (EditText) findViewById(R.id.oggetto);
 		EditText location = (EditText) findViewById(R.id.luogo);

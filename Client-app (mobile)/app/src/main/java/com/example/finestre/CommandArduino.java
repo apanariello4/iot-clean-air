@@ -19,21 +19,17 @@ import org.eclipse.paho.client.mqttv3.MqttClient;
 import org.eclipse.paho.client.mqttv3.MqttException;
 import org.eclipse.paho.client.mqttv3.MqttMessage;
 
-import java.io.DataOutputStream;
 import java.io.IOException;
 
 import java.io.UnsupportedEncodingException;
-import java.net.URL;
-import java.net.HttpURLConnection;
+
 import org.jetbrains.annotations.NotNull;
 import org.json.*;
 
 import okhttp3.Call;
 import okhttp3.Callback;
-import okhttp3.FormBody;
 import okhttp3.OkHttpClient;
 import okhttp3.Request;
-import okhttp3.RequestBody;
 import okhttp3.Response;
 
 
@@ -53,8 +49,9 @@ public class CommandArduino extends AppCompatActivity {
         tv = (TextView) findViewById(R.id.WindowState);
         Intent intent = getIntent();
         final String uuid = intent.getStringExtra(MainActivity.EXTRA_UUID);
+        final String location = intent.getStringExtra(MainActivity.EXTRA_LOCATION);
         qrcode = (TextView) findViewById(R.id.qrcode_id);
-        qrcode.setText(uuid);
+        qrcode.setText(location);
 
         String clientId = MqttClient.generateClientId();
         final MqttAndroidClient client = new MqttAndroidClient(CommandArduino.this,
