@@ -91,9 +91,10 @@
             <button type="button" class="btn btn-primary" data-toggle="modal" data-target="#exampleModal">
                 Show QR Code
             </button>
-            <!-- <div class="container">
-            <div id="qrcode" style="width: auto; height: auto; padding: 15px; "></div>
-        </div> -->
+
+        </td>
+        <td style="padding: 20px;">
+            <button type="button" class="btn btn-danger" id="remove-arduino">Remove Arduino</button>
         </td>
     </table>
 </div>
@@ -127,10 +128,13 @@
 
 <script type="text/javascript">
     const button = document.getElementById('post-btn');
+    const remove_button = document.getElementById('remove-arduino')
+
     var status = document.querySelector('#stat').value
     var command = (status == 'False')
 
     var this_path = window.location.href
+    var base_url = window.location.origin
 
     var uuid = this_path.substring(this_path.lastIndexOf('/') + 1);
 
@@ -165,6 +169,21 @@
 
 
     });
+    remove_button.addEventListener('click', async _ => {
+        try {
+            const response = await fetch(base_url + '/api/v1/sensor/remove?uuid=' + uuid);
+            if (response.ok) {
+                alert("Arduino removed");
+                window.location.replace(base_url + '/list');
+            } else {
+                alert("Request failed")
+            }
+        } catch (err) {
+            console.error(`Error: ${err}`);
+        }
+    });
+
+
 </script>
 
 {% endblock %}
