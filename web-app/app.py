@@ -122,7 +122,7 @@ class SensorPollution(Resource):
         if sensor is None:
             return "No arduino with that id in db", 404
 
-        BridgePredictions.query.filter_by(id=id).delete()
+        Sensor.query.filter_by(id=id).delete()
 
         sf = Sensor(id, status=sensor.status, pollution=pol)
 
