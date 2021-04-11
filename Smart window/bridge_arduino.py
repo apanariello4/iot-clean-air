@@ -8,10 +8,10 @@ from setup_arduino import SetupConnection
 # broker_ip = "93.66.137.202" # Local Broker
 # server_ip = "http://93.66.137.202:3000"  # Local Server
 
-server_ip = "http://151.81.17.207:5000"
-broker_ip = "151.81.17.207"
-threshold_pm_25 = 25  # µg/mc air
-threshold_pm_10 = 50  # µg/mc air
+server_ip = "http://151.81.28.142:5000"
+broker_ip = "151.81.28.142"
+threshold_pm_25 = 50  # µg/mc air
+threshold_pm_10 = 100  # µg/mc air
 
 path_db = r"C:\Users\Emanuele\PycharmProjects\iot-clean-air\Smart window\db_UUID"
 location = 'Modena'
@@ -46,8 +46,9 @@ class MQTT:
         # Riceve valore dal Client, lo manda ad Arduino e aggiorna il server
         if msg.topic == f'{self.uuid_Arduino}/command':
             print("Mandato")
-            self.ser.write(msg.payload)  # can be ON or OFF
-            value_returned = br.post_state(br.windowState)
+            self.ser.write(msg.payload)  # can be ON or OFF, lo mando ad arduino
+
+            value_returned = br.post_state(br.windowState) # aggiorno il server
             print("Ho fatto una post ed è ritornato: ", value_returned)
 
 
@@ -61,7 +62,7 @@ class Bridge:
         self.location = location
         self.uuid_Arduino = db.getName()
         self.inbuffer, self.ser = sp.setupSerial()
-        _ = MQTT(self.broker_ip, self.uuid_Arduino, self.ser)
+       # _ = MQTT(self.broker_ip, self.uuid_Arduino, self.ser)
         self.post_state(self.windowState)
         print("Ho comunicato al server il mio ID univoco di Arduino!")
         self.prediction_1h = self.prediction_2h = self.prediction_3h = None
@@ -127,8 +128,10 @@ class Bridge:
         elif self.prediction_2h is not None:
             valid_hours = "Dati validi delle future 2 ore!"
             if self.prediction_1h != 0 and self.prediction_2h != 0:
+                print("mandato 2h")
                 self.ser.write(b'H2')
             elif self.prediction_1h != 0:
+                print("mandato 1h")
                 self.ser.write(b'H1')
 
         elif self.prediction_1h is not None:
@@ -145,8 +148,7 @@ class Bridge:
             if instead the outdoor air quality is not good, the windows remain closed
         """
 
-        timestamp = datetime.strptime(
-            pollution_values['timestamp'], '%Y-%m-%d %H:%M:%S')
+        timestamp = datetime.strptime(pollution_values['timestamp'], '%Y-%m-%d %H:%M:%S')
         pm_10_1h = pm_25_1h = pm_10_2h = pm_25_2h = pm_10_3h = pm_25_3h = None
         self.prediction_1h = self.prediction_2h = self.prediction_3h = None
 
@@ -209,13 +211,14 @@ class Bridge:
             self.windowState = val
             # Send the data to the Server
             value_returned = self.post_state(self.windowState)
-            print(
-                "E' cambiato lo stato della finestra (da Arduino) con ritorno: ", value_returned)
+            print("E' cambiato lo stato della finestra (da Arduino) con ritorno: ", value_returned)
+
+
 
     def get_pollution(self):
-        url = server_ip + '/api/v1/predictions'
-        myid = {'region': self.location}
-        pollution_values = requests.get(url, json=myid)
+        url = f'{server_ip}/api/v1/predictions?region={self.location}'
+        #myid = {'region': self.location}
+        pollution_values = requests.get(url)
         print("Valori dal DB: ", pollution_values.json())
         return pollution_values.json()
 
@@ -231,4 +234,5 @@ if __name__ == '__main__':
     db = Database()
     sp = SetupConnection()
     br = Bridge()
+    _ = MQTT(br.broker_ip, br.uuid_Arduino, br.ser)
     br.loop()

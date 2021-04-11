@@ -196,16 +196,28 @@ void loop() {
     if (iState==5 && iReceived=='3') iFutureState=8;
     if ((iState==6 && iReceived=='H') || (iState==7 && iReceived=='H') || (iState==8 && iReceived=='H')) iFutureState=5;
     
-
+//    if (can_open==1){
+//              Serial.write(0xff);
+//        Serial.write(0x01);
+//        Serial.write(0x04);
+//        Serial.write(0xfe);}
+//        if (can_open==0){
+//              Serial.write(0xff);
+//        Serial.write(0x01);
+//        Serial.write(0x03);
+//        Serial.write(0xfe);
+//        }
     // H1: set one hour of time before to close the window
     if (iFutureState==6 && iState==5){
         last_time_pollution = millis() + 3600;
         can_open = 1; 
+
     }
     // H2: set two hours of time before to close the window
     if (iFutureState==7 && iState==5){
         last_time_pollution = millis() + 7200;
         can_open = 1;
+
         
     }
     
@@ -213,6 +225,7 @@ void loop() {
     if (iFutureState==8 && iState==5){
         last_time_pollution = millis() + 10800;
         can_open = 1;
+
     }
     
     
