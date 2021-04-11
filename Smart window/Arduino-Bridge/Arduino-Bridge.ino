@@ -207,6 +207,7 @@ void loop() {
 //        Serial.write(0x03);
 //        Serial.write(0xfe);
 //        }
+
     // H1: set one hour of time before to close the window
     if (iFutureState==6 && iState==5){
         last_time_pollution = millis() + 3600;
