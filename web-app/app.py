@@ -1,4 +1,5 @@
-from flask import Flask, render_template, request, send_from_directory
+from flask import Flask, render_template, request, send_from_directory, redirect, flash
+from flask.helpers import url_for
 from flask.templating import render_template_string
 from config import Config
 from flask_restful import Api, Resource
@@ -57,6 +58,8 @@ class SensorStatus(Resource):
 
         id = request.get_json()['id']
         status = int(request.get_json()['status'])
+
+        print(request.get_json())
 
         if is_valid_uuid(id) is False:
             return "id field is not valid", 400
@@ -133,6 +136,27 @@ class SensorPollution(Resource):
 
 
 api.add_resource(SensorPollution, f'{base_url}/sensor/pollution')
+
+
+class RemoveSensor(Resource):
+    def get(self):
+        id = request.args.get('uuid', default=None)
+
+        if is_valid_uuid(id) is False:
+            return "id field is not valid", 400
+
+        sensor = Sensor.query.filter_by(id=id).first()
+
+        if sensor is None:
+            return f"No sensor with this id: {id} in db", 400
+
+        Sensor.query.filter_by(id=id).delete()
+        db.session.commit()
+
+        return "Removed", 200
+
+
+api.add_resource(RemoveSensor, f'{base_url}/sensor/remove')
 
 
 class Client(Resource):
@@ -244,16 +268,46 @@ def page_not_found(error):
 
 @app.route('/login', methods=['GET'])
 def login():
+    '''Login page missing backend
+    '''
     return render_template('login.html')
 
 
-@app.route('/', methods=['GET'])
+@app.route('/', methods=['GET', 'POST'])
 def home():
-    return render_template('main.html')
+    if request.method == 'GET':
+        '''Shows add arduino page
+        '''
+        return render_template('home.html')
+
+    if request.method == 'POST':
+        '''Adds arduino
+            form:
+              - uuid: <uuid>
+        '''
+
+        new_arduino: str = request.form.get('uuid')
+        print(new_arduino)
+
+        if not new_arduino or is_valid_uuid(new_arduino.strip()) is False:
+            return render_template('home.html', error="UUID is not valid")
+
+        new_arduino = new_arduino.strip()
+
+        if Sensor.query.filter_by(id=new_arduino).first() is not None:
+            return render_template('home.html', error="This Arduino is already registered")
+
+        new_entry = Sensor(id=new_arduino, status=0)
+
+        db.session.add(new_entry)
+        db.session.commit()
+
+        flash('Arduino added succesfully, redirecting to the list of Arduino', 'info')
+        return redirect(url_for('printlist'))
 
 
 @app.route('/manage/<uuid>', methods=['GET', 'POST'])
-def manage_arduino(uuid):
+def manage_arduino(uuid: str):
     """Page to manage the arduino.
 
     We can read information and send open/close commands.
