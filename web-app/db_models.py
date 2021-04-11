@@ -6,7 +6,15 @@ from datetime import datetime
 db = SQLAlchemy()
 
 
-class Sensor(db.Model):
+class BaseMixin(object):
+    @classmethod
+    def create(cls, **kw):
+        obj = cls(**kw)
+        db.session.add(obj)
+        db.session.commit()
+
+
+class Sensor(BaseMixin, db.Model):
     # id arduino | window status | pollution value | timestamp
 
     id = db.Column('id', UUIDType(binary=False), primary_key=True)
@@ -23,7 +31,7 @@ class Sensor(db.Model):
     # aggiungi update
 
 
-class BridgePredictions(db.Model):
+class BridgePredictions(BaseMixin, db.Model):
     # region | pm_10_1h | pm_25_1h | pm_10_2h | pm_25_2h | pm_10_3h | pm_25_3h | timestamp
 
     region = db.Column('region', db.String, primary_key=True)
