@@ -3,6 +3,8 @@ __pycache__
 .vscode
 *.sqlite
 build
+.idea/
+.pytest_cache/
 
 ### AndroidStudio ###
 # Covers files to be ignored for android development using Android Studio.
