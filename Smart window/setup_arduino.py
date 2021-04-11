@@ -42,6 +42,7 @@ class SetupConnection:
         try:
             if self.portname is not None:
                 self.ser = Serial(self.portname, 9600, timeout=0)
+                print(f"Connected to {self.portname}")
         except Exception:
             self.ser = None
 

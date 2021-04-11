@@ -67,14 +67,12 @@ class Bridge:
         print("Ho comunicato al server il mio ID univoco di Arduino!")
         self.prediction_1h = self.prediction_2h = self.prediction_3h = None
 
-        # Take the values of the outdoor pollution and communicate them to Arduino
-        pollution_values = self.get_pollution()
-        self.evaluete_pollution(pollution_values)
-        self.send_info_Arduino()
 
     def loop(self):
 
-        lasttime = time.time()
+        # la prima volta che va a controllare l'inquinamento e manda il messaggio ad arduino è poco dopo l'inizio
+        # Dopo controlla e aggiorna arduino ogni 60 minuti
+        lasttime = time.time() -59.0
 
         while (True):
             # look for a byte from serial (dati da Arduino)
@@ -113,23 +111,24 @@ class Bridge:
             La terza ora futura diventerà la seconda ora futura e la seconda la prossima.
             Arduino sarà sempre aggiornato capendo se in quell'ora può aprire la finestra o se deve tenerla chiusa.
         """
-
+        print("self.ser aldilà", self.ser)
         if self.prediction_3h is not None:
             valid_hours = "Dati validi delle future 3 ore!"
             if self.prediction_1h != 0 and self.prediction_2h != 0 and self.prediction_3h != 0:
                 self.ser.write(b'H3')
-
+                print("mandato 3h")
             elif self.prediction_1h != 0 and self.prediction_2h != 0:
                 self.ser.write(b'H2')
-
+                print("mandato 2h")
             elif self.prediction_1h != 0:
                 self.ser.write(b'H1')
-
+                print("mandato 1h")
         elif self.prediction_2h is not None:
             valid_hours = "Dati validi delle future 2 ore!"
             if self.prediction_1h != 0 and self.prediction_2h != 0:
                 print("mandato 2h")
                 self.ser.write(b'H2')
+
             elif self.prediction_1h != 0:
                 print("mandato 1h")
                 self.ser.write(b'H1')
@@ -138,6 +137,7 @@ class Bridge:
             valid_hours = "Dati validi della futura ora!"
             if self.prediction_1h != 0:
                 self.ser.write(b'H1')
+                print("mandato 1h")
         print(valid_hours)
 
     def evaluete_pollution(self, pollution_values):
@@ -207,7 +207,7 @@ class Bridge:
         print("valore sensore: ", val)
         # Se è la prima volta che il valore viene aggiornato avverto il server che avvertirà il client
 
-        if self.windowState != val and val != 2:
+        if self.windowState != val and val != 2 and val != 3 and val != 4:
             self.windowState = val
             # Send the data to the Server
             value_returned = self.post_state(self.windowState)

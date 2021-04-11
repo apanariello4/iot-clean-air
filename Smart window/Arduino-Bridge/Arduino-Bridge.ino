@@ -169,6 +169,19 @@ void loop() {
       }
   }
 
+//    if (can_open==1){
+//              Serial.write(0xff);
+//        Serial.write(0x01);
+//        Serial.write(0x04);
+//        Serial.write(0xfe);
+//     }
+//        
+//        if (can_open==0){
+//              Serial.write(0xff);
+//        Serial.write(0x01);
+//        Serial.write(0x03);
+//        Serial.write(0xfe);
+//        }
   //se ho un dato disponibile sulla seriale lo uso, altrimenti faccio altro
   if (Serial.available()>0)
   { 
@@ -181,42 +194,37 @@ void loop() {
     
 
     // FSM: ON-OFF (open/close) window
-    if (iState==0 && iReceived=='O') iFutureState=1;
+ //   if (iState==0 && iReceived=='O') iFutureState=1;
     if (iState==1 && iReceived=='N') iFutureState=2;
     if (iState==1 && iReceived=='F') iFutureState=3;
     if (iState==3 && iReceived=='F') iFutureState=4;
-    if (iState==4 && iReceived=='O') iFutureState=1;
-    if (iState==2 && iReceived=='O') iFutureState=1;
-    if (iState==1 && iReceived=='O') iFutureState=1;
+//    if (iState==4 && iReceived=='O') iFutureState=1;
+//    if (iState==2 && iReceived=='O') iFutureState=1;
+//    if (iState==1 && iReceived=='O') iFutureState=1;
 
-    // FSM: used to understand the time in which the window can remain open
+    if (iState!=-1 && iReceived=='O') iFutureState=1; //in qualsiasi stato ci troviamo, se arriva 'O' vado allo stato 1
+   
+    // FSM: used to understand the time in which the window can remain 
+    
     if (iState==0 && iReceived=='H') iFutureState=5;
     if (iState==5 && iReceived=='1') iFutureState=6;
     if (iState==5 && iReceived=='2') iFutureState=7;
     if (iState==5 && iReceived=='3') iFutureState=8;
-    if ((iState==6 && iReceived=='H') || (iState==7 && iReceived=='H') || (iState==8 && iReceived=='H')) iFutureState=5;
+//    if ((iState==6 && iReceived=='H') || (iState==7 && iReceived=='H') || (iState==8 && iReceived=='H')) iFutureState=5;
+
+    if (iState!=-1 && iReceived=='H') iFutureState=5; //in qualsiasi stato ci troviamo, se arriva 'H' vado allo stato 5
     
-//    if (can_open==1){
-//              Serial.write(0xff);
-//        Serial.write(0x01);
-//        Serial.write(0x04);
-//        Serial.write(0xfe);}
-//        if (can_open==0){
-//              Serial.write(0xff);
-//        Serial.write(0x01);
-//        Serial.write(0x03);
-//        Serial.write(0xfe);
-//        }
+
 
     // H1: set one hour of time before to close the window
     if (iFutureState==6 && iState==5){
-        last_time_pollution = millis() + 3600;
+        last_time_pollution = millis() + 3600000;
         can_open = 1; 
 
     }
     // H2: set two hours of time before to close the window
     if (iFutureState==7 && iState==5){
-        last_time_pollution = millis() + 7200;
+        last_time_pollution = millis() + 7200000;
         can_open = 1;
 
         
@@ -224,7 +232,7 @@ void loop() {
     
     // H3: set three hours of time before to close the window
     if (iFutureState==8 && iState==5){
-        last_time_pollution = millis() + 10800;
+        last_time_pollution = millis() + 10800000;
         can_open = 1;
 
     }
