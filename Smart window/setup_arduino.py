@@ -1,5 +1,27 @@
 from serial.tools.list_ports import comports
 from serial import Serial
+import platform
+
+
+def get_serial_port():
+    portname = ''
+    if platform.system() == 'Linux':
+        ports = comports()
+        for port in ports:
+            print(port.device)
+            if 'tty' in port.device.lower():
+                portname = port.device
+
+        return portname
+
+    elif platform.system() == 'Windows':
+        ports = comports()
+        for port in ports:
+            print(port.device)
+            print(port.description)
+            if 'arduino' in port.description.lower():
+                portname = port.device
+        return portname
 
 
 class SetupConnection:
@@ -13,13 +35,8 @@ class SetupConnection:
         self.ser = None
         print("list of available ports: ")
 
-        ports = comports()
-        self.portname = None
-        for port in ports:
-            print(port.device)
-            print(port.description)
-            if 'arduino' in port.description.lower():
-                self.portname = port.device
+        self.portname = get_serial_port()
+
         print("connecting to " + self.portname)
 
         try:
