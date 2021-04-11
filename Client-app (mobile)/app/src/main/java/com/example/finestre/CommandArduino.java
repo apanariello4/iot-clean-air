@@ -37,8 +37,9 @@ public class CommandArduino extends AppCompatActivity {
 
     TextView tv, qrcode;
     Button btn1, btn2;
-    private String server = "http://151.81.17.207:5000";
-    private String url = "http://151.81.17.207:5000/api/v1/sensor/status?uuid=";
+    private String server = "http://151.81.28.142:5000";
+    private String url = "http://151.81.28.142:5000/api/v1/sensor/status?uuid=";
+    private String broker = "tcp://151.81.28.142:1883";
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -55,7 +56,7 @@ public class CommandArduino extends AppCompatActivity {
 
         String clientId = MqttClient.generateClientId();
         final MqttAndroidClient client = new MqttAndroidClient(CommandArduino.this,
-                "tcp://151.81.17.207:1883", clientId);
+                broker, clientId);
 
 
         getStatusWindow(uuid,url);
