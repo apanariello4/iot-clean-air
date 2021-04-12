@@ -48,7 +48,7 @@ class MQTT:
             print("Mandato")
             self.ser.write(msg.payload)  # can be ON or OFF, lo mando ad arduino
 
-            value_returned = br.post_state(br.windowState) # aggiorno il server
+            value_returned = br.post_state(br.windowState)  # aggiorno il server
             print("Ho fatto una post ed è ritornato: ", value_returned)
 
 
@@ -62,11 +62,10 @@ class Bridge:
         self.location = location
         self.uuid_Arduino = db.getName()
         self.inbuffer, self.ser = sp.setupSerial()
-       # _ = MQTT(self.broker_ip, self.uuid_Arduino, self.ser)
+        # _ = MQTT(self.broker_ip, self.uuid_Arduino, self.ser)
         self.post_state(self.windowState)
         print("Ho comunicato al server il mio ID univoco di Arduino!")
         self.prediction_1h = self.prediction_2h = self.prediction_3h = None
-
 
     def loop(self):
 
@@ -214,11 +213,9 @@ class Bridge:
             value_returned = self.post_state(self.windowState)
             print("E' cambiato lo stato della finestra (da Arduino) con ritorno: ", value_returned)
 
-
-
     def get_pollution(self):
         url = f'{server_ip}/api/v1/predictions?region={self.location}'
-        #myid = {'region': self.location}
+        # myid = {'region': self.location}
         pollution_values = requests.get(url)
         print("Valori dal DB: ", pollution_values.json())
         return pollution_values.json()

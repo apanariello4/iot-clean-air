@@ -15,6 +15,8 @@ int changed_0 = 0;  // Represent a counter used when we want to send to the Brid
 int changed_2 = 0;  // Represent a counter used when we want to send to the Bridge the state 'window transition state'
 int changed_1 = 0;  // Represent a counter used when we want to send to the Bridge the state 'open window'
 int can_open = 0;   // Variable that allow to open the windows (given by the evaluation of the outdoor pollution)
+int gradi_apertura = 160;
+int gradi_chiusura = 117;
 
 unsigned long lasttime,lasttime_servo,last_time_pollution;
 
@@ -29,7 +31,7 @@ void setup() {
   
   myservo.attach(9); // attaches the servo on pin 9 to the servo object
   pos = 90; //dopo la configurazione la posizione si trova a 90°
-  
+  myservo.write(gradi_chiusura);
   while(!ccs.available()); //calibrate temperature sensor
   float temp = ccs.calculateTemperature();
   ccs.setTempOffset(temp - 25.0);
@@ -40,7 +42,6 @@ void setup() {
   can_open = 0; 
   
   iState=0;
-
   
 }
 
@@ -104,7 +105,7 @@ void loop() {
     }  
     
     //setto stato finestra: aperta
-    if(pos==270){
+    if(pos==gradi_apertura){
       state_zero=1; 
       state_one=1;
       changed=0; // ho finito di cambiare lo stato e lo comunico al Bridge
@@ -122,7 +123,7 @@ void loop() {
     }
     
     //setto stato finestra: chiusa
-    if(pos==90){
+    if(pos==gradi_chiusura){
       state_zero=0; 
       state_one=0;
       changed=0; // ho finito di cambiare lo stato e lo comunico al Bridge
