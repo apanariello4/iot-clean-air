@@ -48,7 +48,7 @@ void loop() {
 
  
   // ogni n secondi calcolo il valore di CO2
-  if (millis() - lasttime > 4000){
+  if (millis() - lasttime > 8000){
     lasttime = millis();
     
     //se posso vado a calcolare i valori di CO2 interna
@@ -130,6 +130,7 @@ void loop() {
   }
 
 
+  //METODO EURISTICO: per far si che il Bridge riceva il valore glielo mando 3 volte di seguito
   // Scrittura del dato sul Bridge, se lo stato del Bridge non era aggiornato
   if(changed==0){  
     // communicate the beginning of the data transmission (0xff and the numbers of data that it will send)
@@ -138,7 +139,7 @@ void loop() {
 
     // In order to be sure of the data, it will send the data only after three consecutive identical values
 
-    // Here we increment the 
+    
     if(state_zero == 0 && state_one == 0){
       Serial.write(0x00);
       // incremento uno e azzero gli altri per considerare un invio consecutivo dello stesso valore e non un invio alternato di valori
@@ -162,7 +163,7 @@ void loop() {
     }
     Serial.write(0xfe); //fine del file
     
-    // se ho mandato per tre volte consecutive lo stesso valore allora sono sicuro che sia arrivato correttamente (empirico)
+    // se ho mandato per tre volte consecutive lo stesso valore allora sono sicuro che sia arrivato correttamente
     if(changed_0 == 3 || changed_1 == 3 || changed_2 == 3){
          changed_0 = changed_2 = changed_1 = 0;
          changed=1;
@@ -182,10 +183,11 @@ void loop() {
 //        Serial.write(0x03);
 //        Serial.write(0xfe);
 //        }
+
   //se ho un dato disponibile sulla seriale lo uso, altrimenti faccio altro
   if (Serial.available()>0)
   { 
-    iReceived = Serial.read();
+    iReceived = Serial.read(); // prende un byte alla volta
 
 
     // default: back to the first state
@@ -204,7 +206,7 @@ void loop() {
 
     if (iState!=-1 && iReceived=='O') iFutureState=1; //in qualsiasi stato ci troviamo, se arriva 'O' vado allo stato 1
    
-    // FSM: used to understand the time in which the window can remain 
+    // FSM: used to understand the time in which the window can remain open
     
     if (iState==0 && iReceived=='H') iFutureState=5;
     if (iState==5 && iReceived=='1') iFutureState=6;

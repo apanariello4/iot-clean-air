@@ -10,7 +10,7 @@ from setup_arduino import SetupConnection
 
 server_ip = "http://151.81.28.142:5000"
 broker_ip = "151.81.28.142"
-threshold_pm_25 = 50  # µg/mc air
+threshold_pm_25 = 100  # µg/mc air
 threshold_pm_10 = 100  # µg/mc air
 
 path_db = r"C:\Users\Emanuele\PycharmProjects\iot-clean-air\Smart window\db_UUID"
@@ -70,10 +70,10 @@ class Bridge:
 
     def loop(self):
 
-        # la prima volta che va a controllare l'inquinamento e manda il messaggio ad arduino è poco dopo l'inizio
-        # Dopo controlla e aggiorna arduino ogni 60 minuti
-        lasttime = time.time() -59.0
-
+        # La prima volta controllare l'inquinamento dopo 2 secondi
+        # Successivamente il controllo viene fatto ogni ora
+        lasttime = time.time() - 3598
+        print(time.localtime(lasttime + 3600))
         while (True):
             # look for a byte from serial (dati da Arduino)
             if self.ser is not None:
@@ -91,11 +91,12 @@ class Bridge:
                         self.inbuffer.append(lastchar)
 
             # Fa una Get per l'inquinamento ogni ora e prende i valori delle 3 ore successive
-            if time.time() - lasttime > 60:
+            if time.time() - lasttime > 3600:
                 pollution_values = self.get_pollution()
                 self.evaluete_pollution(pollution_values)
                 self.send_info_Arduino()
                 lasttime = time.time()
+                print(time.localtime(lasttime))
 
     def send_info_Arduino(self):
         valid_hours = "Nessun dato valido dal DB"
@@ -111,7 +112,7 @@ class Bridge:
             La terza ora futura diventerà la seconda ora futura e la seconda la prossima.
             Arduino sarà sempre aggiornato capendo se in quell'ora può aprire la finestra o se deve tenerla chiusa.
         """
-        print("self.ser aldilà", self.ser)
+
         if self.prediction_3h is not None:
             valid_hours = "Dati validi delle future 3 ore!"
             if self.prediction_1h != 0 and self.prediction_2h != 0 and self.prediction_3h != 0:

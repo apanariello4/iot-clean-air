@@ -5,7 +5,7 @@ import requests
 import csv
 
 date = []
-host_path = "http://151.81.17.207:5000"
+host_path = "http://151.81.28.142:5000"
 dataset_pm25_1 = "./dataset/pm25_modena_parco_ferrari_2019.csv"
 dataset_pm25_2 = "./dataset/pm25_modena_parco_ferrari_2020.csv"
 dataset_pm25_3 = "./dataset/pm25_modena_parco_ferrari_sensor.csv"

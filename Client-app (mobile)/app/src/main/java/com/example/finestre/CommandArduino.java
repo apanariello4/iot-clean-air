@@ -155,7 +155,12 @@ public class CommandArduino extends AppCompatActivity {
                                 JSONObject Jobject = new JSONObject(myResponse);
                                 String stato_finestra = Jobject.getString("status");
                                 Toast.makeText(CommandArduino.this, stato_finestra,Toast.LENGTH_SHORT).show();
-                                tv.setText(stato_finestra);
+                                if (stato_finestra.equals("true")){
+                                    tv.setText("Finestra APERTA");
+                                }
+                                if (stato_finestra.equals("false")){
+                                    tv.setText("Finestra CHIUSA");
+                                }
                             } catch (JSONException e) {
                                 e.printStackTrace();
                             }
@@ -185,7 +190,13 @@ public class CommandArduino extends AppCompatActivity {
 
                         String arrivato = message.toString();
                         Toast.makeText(CommandArduino.this, "Nuovo messaggio ricevuto",Toast.LENGTH_SHORT).show();
-                        tv.setText(arrivato);
+                        if (arrivato.equals("1")){
+                            tv.setText("Finestra APERTA");
+                        }
+                        if (arrivato.equals("0")){
+                            tv.setText("Finestra CHIUSA");
+                        }
+
                     }
 
                     @Override
