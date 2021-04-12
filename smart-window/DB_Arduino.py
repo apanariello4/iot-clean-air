@@ -3,7 +3,7 @@ import os
 import uuid
 
 
-path_db = r'C:\Users\Emanuele\PycharmProjects\iot-clean-air\Smart window\db_UUID'
+path_db = r'C:\Users\Emanuele\PycharmProjects\iot-clean-air\Smart-Window\db_UUID'
 
 
 class Database:

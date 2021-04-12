@@ -13,7 +13,7 @@ broker_ip = "151.81.28.142"
 threshold_pm_25 = 100  # µg/mc air
 threshold_pm_10 = 100  # µg/mc air
 
-path_db = r"C:\Users\Emanuele\PycharmProjects\iot-clean-air\Smart window\db_UUID"
+path_db = r"C:\Users\Emanuele\PycharmProjects\iot-clean-air\Smart-Window\db_UUID"
 location = 'Modena'
 
 
