@@ -14,7 +14,7 @@ threshold_pm_25 = 100  # µg/mc air
 threshold_pm_10 = 100  # µg/mc air
 
 path_db = r"C:\Users\Emanuele\PycharmProjects\iot-clean-air\Smart-Window\db_UUID"
-location = 'Modena'
+region = 'Modena'
 
 
 class MQTT:
@@ -59,7 +59,7 @@ class Bridge:
         self.windowState = 0  # Arduino will communicate the state of the windows to the Bridge
         self.broker_ip = broker_ip
         self.path_db = path_db
-        self.location = location
+        self.region = region
         self.uuid_Arduino = db.getName()
         self.inbuffer, self.ser = sp.setupSerial()
         # _ = MQTT(self.broker_ip, self.uuid_Arduino, self.ser)
@@ -214,8 +214,8 @@ class Bridge:
             print("E' cambiato lo stato della finestra (da Arduino) con ritorno: ", value_returned)
 
     def get_pollution(self):
-        url = f'{server_ip}/api/v1/predictions?region={self.location}'
-        # myid = {'region': self.location}
+        url = f'{server_ip}/api/v1/predictions?region={self.region}'
+        # myid = {'region': self.region}
         pollution_values = requests.get(url)
         print("Valori dal DB: ", pollution_values.json())
         return pollution_values.json()
@@ -223,7 +223,7 @@ class Bridge:
     def post_state(self, status):
         # I send the state and the uuid to the server
         url = server_ip + '/api/v1/sensor/status'
-        myinfo = {'id': self.uuid_Arduino, 'status': status}
+        myinfo = {'id': self.uuid_Arduino, 'status': status, 'region': self.region}
         value_sent = requests.post(url, json=myinfo)
         return value_sent
 
