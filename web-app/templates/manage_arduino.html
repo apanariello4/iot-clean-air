@@ -23,89 +23,89 @@
         margin: 0 auto;
     }
 </style>
-<div id="content" style="margin-top: 5%;">
-    <table class="table table-hover table-striped table-bordered w3-centered"
-        style="border: 1px; margin-left: 25%; margin-right: 10%;max-width:50%;padding-top: 20px;">
-        <tr>
-            <td>
-                <div class="w3-center">
-                    <p style="font-weight: bold;">ID</p>
-                </div>
-            </td>
-            <td>
-                <div class="w3-center">
-                    <p>{{ info.id }}</p>
-                </div>
-            </td>
-        </tr>
-        <tr>
-            <td>
-                <div class="w3-center">
-                    <p style="font-weight: bold;">Pollution Value</p>
-                </div>
-            </td>
-            <td>
-                <div class="w3-center">
-                    <p>{{ info.pollution }}</p>
-                </div>
-            </td>
-        </tr>
-        <tr>
-            {% if info.status == 0 %}
+<div class="card row justify-content-md-center mx-auto" style="width: 70%;margin-top: 20px;">
+    <div class="card-header">
+        Arduino Status
+    </div>
+    <div class="card-body">
+        <div id="content">
+            <table class="table table-hover table-striped table-bordered w3-centered">
+                <tr>
+                    <td>
+                        <p style="font-weight: bold;">ID</p>
+                    </td>
+                    <td>
+                        <p>{{ info.id }}</p>
+                    </td>
+                </tr>
+                <tr>
+                    <td style="vertical-align: middle;">
+                        <p style="font-weight: bold;">Pollution Value</p>
+                    </td>
+                    <td>
+                        <p>{{ info.pollution }}</p>
+                    </td>
+                </tr>
+                <tr>
+                    {% if info.status == 0 %}
 
-            <td>
-                <div class="w3-center">
-                    <p style="font-weight: bold;">Window Status</p>
+                    <td style="vertical-align: middle;">
+                        <div class="w3-center">
+                            <p style="font-weight: bold;">Window Status</p>
+                        </div>
+                    </td>
+                    <td>
+                        <div class="w3-center">
+                            <p style="color: red;font-weight: bold;">Closed</p>
+                        </div>
+
+                        <div class="w3-padding-16"><button class="btn btn-primary w3-centered" id="post-btn"> Open
+                                Window</button>
+                        </div>
+                    </td>
+
+                    {% else %}
+
+                    <td style="vertical-align: middle;">
+                        <div class="w3-center">
+                            <p style="font-weight: bold;">Window Status</p>
+                        </div>
+                    </td>
+                    <td>
+                        <div class="w3-center">
+                            <p style="color: green;font-weight: bold;">Open</p>
+                        </div>
+                        <div class="w3-padding-16"><button class="btn btn-primary w3-centered" id="post-btn"> Close
+                                Window</button>
+
+                    </td>
+
+                    {% endif %}
+
+                </tr>
+            </table>
+            <div class="card-footer bg-white">
+                <div class="container">
+                    <div class="row">
+                        <div class="col">
+                            <button class="btn btn-primary" onClick="window.location.reload();">
+                                Refresh status</button>
+                        </div>
+                        <div class="col">
+                            <!-- Button trigger modal -->
+                            <button type="button" class="btn btn-primary" data-toggle="modal"
+                                data-target="#exampleModal">
+                                Show QR Code
+                            </button>
+                        </div>
+                        <div class="col">
+                            <button type="button" class="btn btn-danger" id="remove-arduino">Remove Arduino</button>
+                        </div>
+                    </div>
                 </div>
-            </td>
-            <td>
-                <div class="w3-center">
-                    <p style="color: red;font-weight: bold;">Closed</p>
-                </div>
-
-                <div class="w3-padding-16"><button class="btn btn-primary w3-centered" id="post-btn"> Open
-                        Window</button>
-                </div>
-            </td>
-
-            {% else %}
-
-            <td>
-                <div class="w3-center">
-                    <p style="font-weight: bold;">Window Status</p>
-                </div>
-            </td>
-            <td>
-                <div class="w3-center">
-                    <p style="color: green;font-weight: bold;">Open</p>
-                </div>
-                <div class="w3-padding-16"><button class="btn btn-primary w3-centered" id="post-btn"> Close
-                        Window</button>
-
-            </td>
-
-            {% endif %}
-
-        </tr>
-    </table>
-
-    <table class="center">
-        <td style="padding: 20px;">
-            <div class="w3-padding-16 w3-center"> <button class="btn btn-primary w3-centered"
-                    onClick="window.location.reload();">
-                    Refresh status</button></div>
-        </td>
-        <td style="padding: 20px;">
-            <!-- Button trigger modal -->
-            <button type="button" class="btn btn-primary" data-toggle="modal" data-target="#exampleModal">
-                Show QR Code
-            </button>
-
-        </td>
-        <td style="padding: 20px;">
-            <button type="button" class="btn btn-danger" id="remove-arduino">Remove Arduino</button>
-        </td>
-    </table>
+            </div>
+        </div>
+    </div>
 </div>
 
 

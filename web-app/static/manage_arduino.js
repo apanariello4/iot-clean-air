@@ -68,7 +68,7 @@ client.connect({ onSuccess: onConnect, reconnect: true, keepAliveInterval: 10 })
 // called when the client connects
 function onConnect() {
     // Once a connection has been made, make a subscription and send a message.
-    console.log("Connected");
+    console.log("Connected, Client ID: " + clientId);
     client.subscribe(arduino_uuid + '/window');
     console.log("Subscribed to: " + arduino_uuid + '/window')
 
