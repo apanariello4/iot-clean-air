@@ -10,18 +10,29 @@
 </script>
 {% endif %}
 {% endwith %}
+<div class="card row justify-content-md-center mx-auto text-center" style="width: 50%; margin-top: 20px;">
 
-<div id="content" class="row justify-content-md-center" style="margin-top: 20px;">
+    <div class="card-header">
+        <p class="h2">List of registered sensors</p>
+    </div>
     <ul class="list-group">
 
-        <p class="h2">List of registered sensors</p>
-
         {% for sensor in lista %}
-        <li class="list-group-item align-items-center">ID: <a href=manage/{{sensor.id}}>
-                {{sensor.id}}</a>, Window Open: {{sensor.status}}</li>
+
+        <li class="list-group-item align-items-center">
+
+            ID: <a href=manage/{{sensor.id}}>{{sensor.id}}</a>
+            <br>
+            {% if sensor.status %} Window <span style="color: green;font-weight: bold;">Open</span>
+            {%else%} Window <span style="color: red;font-weight: bold;">Closed</span>
+            {% endif %}
+        </li>
+
+
         {% endfor %}
 
     </ul>
+
 
 </div>
 {% endblock %}

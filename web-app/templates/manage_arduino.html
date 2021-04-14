@@ -23,7 +23,7 @@
         margin: 0 auto;
     }
 </style>
-<div class="card row justify-content-md-center mx-auto" style="width: 70%;margin-top: 20px;">
+<div class="card row justify-content-md-center mx-auto" style="width: 60%;margin-top: 20px;">
     <div class="card-header">
         Arduino Status
     </div>
@@ -32,18 +32,28 @@
             <table class="table table-hover table-striped table-bordered w3-centered">
                 <tr>
                     <td>
-                        <p style="font-weight: bold;">ID</p>
+                        <span style="font-weight: bold;">ID</span>
                     </td>
                     <td>
-                        <p>{{ info.id }}</p>
+                        <span>{{ info.id }}</span>
                     </td>
                 </tr>
+                {% if info.pollution %}
                 <tr>
                     <td style="vertical-align: middle;">
-                        <p style="font-weight: bold;">Pollution Value</p>
+                        <span style="font-weight: bold;">Pollution Value</span>
                     </td>
                     <td>
-                        <p>{{ info.pollution }}</p>
+                        <span>{{ info.pollution }}</span>
+                    </td>
+                </tr>
+                {% endif %}
+                <tr>
+                    <td>
+                        <span style="font-weight: bold;">Region</span>
+                    </td>
+                    <td>
+                        <span>{{info.region|capitalize}}</span>
                     </td>
                 </tr>
                 <tr>
@@ -51,12 +61,12 @@
 
                     <td style="vertical-align: middle;">
                         <div class="w3-center">
-                            <p style="font-weight: bold;">Window Status</p>
+                            <span style="font-weight: bold;">Window Status</span>
                         </div>
                     </td>
                     <td>
                         <div class="w3-center">
-                            <p style="color: red;font-weight: bold;">Closed</p>
+                            <span style="color: red;font-weight: bold;">Closed</span>
                         </div>
 
                         <div class="w3-padding-16"><button class="btn btn-primary w3-centered" id="post-btn"> Open
@@ -68,12 +78,12 @@
 
                     <td style="vertical-align: middle;">
                         <div class="w3-center">
-                            <p style="font-weight: bold;">Window Status</p>
+                            <span style="font-weight: bold;">Window Status</span>
                         </div>
                     </td>
                     <td>
                         <div class="w3-center">
-                            <p style="color: green;font-weight: bold;">Open</p>
+                            <span style="color: green;font-weight: bold;">Open</span>
                         </div>
                         <div class="w3-padding-16"><button class="btn btn-primary w3-centered" id="post-btn"> Close
                                 Window</button>
@@ -84,25 +94,24 @@
 
                 </tr>
             </table>
-            <div class="card-footer bg-white">
-                <div class="container">
-                    <div class="row">
-                        <div class="col">
-                            <button class="btn btn-primary" onClick="window.location.reload();">
-                                Refresh status</button>
-                        </div>
-                        <div class="col">
-                            <!-- Button trigger modal -->
-                            <button type="button" class="btn btn-primary" data-toggle="modal"
-                                data-target="#exampleModal">
-                                Show QR Code
-                            </button>
-                        </div>
-                        <div class="col">
-                            <button type="button" class="btn btn-danger" id="remove-arduino">Remove Arduino</button>
-                        </div>
+
+            <div class="container text-center">
+                <div class="row justify-content-md-center">
+                    <div class="col">
+                        <button class="btn btn-primary" onClick="window.location.reload();">
+                            Refresh status</button>
+                    </div>
+                    <div class="col">
+                        <!-- Button trigger modal -->
+                        <button type="button" class="btn btn-primary" data-toggle="modal" data-target="#exampleModal">
+                            Show QR Code
+                        </button>
+                    </div>
+                    <div class="col">
+                        <button type="button" class="btn btn-danger" id="remove-arduino">Remove Arduino</button>
                     </div>
                 </div>
+
             </div>
         </div>
     </div>
@@ -133,6 +142,8 @@
         </div>
     </div>
 </div>
+
+<!-- Pass status to javascript -->
 <input type="hidden" id="stat" value="{{ info.status }}">
 
 <!-- Manage Arduino Script -->
