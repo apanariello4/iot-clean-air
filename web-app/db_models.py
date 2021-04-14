@@ -22,11 +22,13 @@ class Sensor(BaseMixin, db.Model):
     pollution = db.Column('pollution', db.Integer)
     timestamp = db.Column(db.DateTime(timezone=True),
                           nullable=False, default=datetime.utcnow)
+    region = db.Column('region', db.String, default='modena')
 
-    def __init__(self, id, pollution=None, status=None):
+    def __init__(self, id, region, pollution=None, status=None):
         self.id = id
         self.status = status
         self.pollution = pollution
+        self.region = region
 
     # aggiungi update
 
