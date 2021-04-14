@@ -58,6 +58,7 @@ class SensorStatus(Resource):
 
         id = request.get_json()['id']
         status = int(request.get_json()['status'])
+        region = request.get_json()['region']
 
         print(request.get_json())
 
@@ -67,10 +68,13 @@ class SensorStatus(Resource):
         if status is None or status not in {0, 1}:
             return "status field is not valid", 400
 
+        if region is None:
+            return "region field is not valid", 400
+
         sensor = Sensor.query.filter_by(id=id).first()
 
         if sensor is None:
-            sf = Sensor(id, status=status)
+            sf = Sensor(id, status=status, region=region)
             db.session.add(sf)
             db.session.commit()
             mqtt.publish(f'{id}/window', payload=status)
@@ -114,22 +118,30 @@ class SensorPollution(Resource):
         return r, 200
 
     def post(self):
+        # arriva regione e valore
         if has_payload(request) is False:
             return "No valid json payload", 400
 
-        id = request.get_json()['id']
+        region = request.get_json()['region'].lower()
         pol = request.get_json()['pollution']
 
-        sensor = Sensor.query.filter_by(id=id).first()
+        if region is None or pol is None:
+            return "No valid json payload", 400
 
-        if sensor is None:
-            return "No arduino with that id in db", 404
+        try:
+            pol = int(pol)
+        except Exception:
+            return "Pollution is not a valid integer", 400
 
-        Sensor.query.filter_by(id=id).delete()
+        if pol not in range(0, 500):
+            return "No valid pollution value", 400
 
-        sf = Sensor(id, status=sensor.status, pollution=pol)
+        if Sensor.query.filter_by(region=region).first() is None:
+            return "No sensors with that region", 403
 
-        db.session.add(sf)
+        db.session.query(Sensor).filter_by(
+            region=region).update({'pollution': pol})
+
         db.session.commit()
 
         return None, 201
@@ -284,10 +296,11 @@ def home():
         '''Adds arduino
             form:
               - uuid: <uuid>
+              - region: <region>
         '''
 
         new_arduino: str = request.form.get('uuid')
-        print(new_arduino)
+        region: str = request.form.get('region')
 
         if not new_arduino or is_valid_uuid(new_arduino.strip()) is False:
             return render_template('home.html', error="UUID is not valid")
@@ -297,7 +310,12 @@ def home():
         if Sensor.query.filter_by(id=new_arduino).first() is not None:
             return render_template('home.html', error="This Arduino is already registered")
 
-        new_entry = Sensor(id=new_arduino, status=0)
+        if region is None:
+            region = 'modena'
+
+        region = region.strip()
+
+        new_entry = Sensor(id=new_arduino, region=region, status=0)
 
         db.session.add(new_entry)
         db.session.commit()
