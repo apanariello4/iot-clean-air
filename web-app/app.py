@@ -313,7 +313,7 @@ def home():
         if region is None:
             region = 'modena'
 
-        region = region.strip()
+        region = region.strip().lower()
 
         new_entry = Sensor(id=new_arduino, region=region, status=0)
 

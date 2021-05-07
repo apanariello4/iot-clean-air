@@ -42,7 +42,7 @@ button.addEventListener('click', async _ => {
 });
 remove_button.addEventListener('click', async _ => {
     try {
-        const response = await fetch(base_url + '/api/v1/sensor/remove?arduino_uuid=' + arduino_uuid);
+        const response = await fetch(base_url + '/api/v1/sensor/remove?uuid=' + arduino_uuid);
         if (response.ok) {
             alert("Arduino removed");
             window.location.replace(base_url + '/list');
